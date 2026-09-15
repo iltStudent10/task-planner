@@ -1,0 +1,9 @@
+# Rationale
+
+This project uses a task manager as the resource because it is easy to understand, useful for daily life, and flexible enough to demonstrate REST design clearly. The API is organized around the `/api/tasks` resource with standard URLs and HTTP methods. `GET /api/tasks` returns all tasks, `POST /api/tasks` creates a new task, `PUT` and `PATCH` update existing tasks, and `DELETE` removes them. Status codes are used consistently: `200` for successful reads and updates, `201` for task creation, `204` for deletion, `400` for validation problems, and `404` when a task is missing.
+
+The Express project is split into separate files for routes, middleware, and data because that keeps the code easier to test and maintain. The route file handles HTTP behavior, the middleware files handle request logging and centralized error handling, and the data layer manages JSON persistence with `fs` and `path`. Using `dotenv` keeps environment-specific settings out of the code. The JSON store is intentionally simple so the API can run without a database, which matches the assessment requirement.
+
+Error handling focuses on bad input and missing resources. If a task title is blank, the API returns `400`. If a task ID cannot be found, it returns `404`. Unexpected failures go through centralized error middleware and return `500`. The API also supports query parameters for filtering, such as searching by text, category, or completion state.
+
+AI tools helped most with structure ideas, naming, and front-end layout suggestions. They were less reliable when they drifted toward dashboard-style or assignment-specific wording, so I reviewed and rewrote that content to fit a real daily task manager. The main lesson was to use AI as a drafting tool, then validate behavior, match the rubric carefully, and remove anything that did not serve the final product.
