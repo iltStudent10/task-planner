@@ -1,0 +1,11 @@
+# Deployment Architecture Plan
+
+This task manager project should be built locally, tagged, and pushed to Amazon ECR before deployment. The recommended workflow is: build the Express API image and the React client image, run them locally with Docker Compose, then push versioned images such as `1.0.0` and `latest` to ECR. A CI pipeline can repeat the same build steps on every commit so the cluster always pulls a known image tag.
+
+For runtime, I would choose EKS if the goal is a production-style managed Kubernetes deployment, because it provides declarative rollout control, pod rescheduling, and a path to autoscaling. I would choose EC2 with Docker Compose for a smaller learning or budget-focused deployment, because it is easier to understand and cheaper to operate at small scale. EC2 is simpler, but it requires more manual setup and does not give the same orchestration features as EKS.
+
+Secrets should never be committed to the repository. In production, I would store database credentials and API keys in AWS Secrets Manager or SSM Parameter Store and inject them at deploy time. For Kubernetes, those values can be mounted through Secrets or synced by an external secrets controller. The repository should only contain example files and placeholders.
+
+I would scale horizontally when the application is getting more traffic, the API becomes stateless, or CPU and request latency start increasing. Horizontal scaling is the better option for the web tier because replicas can be added quickly behind a service or ingress. I would scale vertically when the app is limited by a single instance and the workload is still small enough that a larger machine is easier than managing more replicas. In practice, I would monitor CPU, memory, and response time, then scale based on those metrics.
+
+Cost control should focus on using the smallest viable compute tier, reusing a single ECR repository, and keeping persistent storage minimal. EKS has a control-plane cost, so it is more expensive than EC2 Docker Compose for small projects. To reduce cost, I would prefer small on-demand instances for development, use right-sized pod requests and limits, delete unused resources, and keep the MongoDB data volume small. If the project must stay in AWS long term, I would also prefer image caching, shorter build pipelines, and fewer always-on services.
