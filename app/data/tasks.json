@@ -1,0 +1,29 @@
+[
+  {
+    "id": "task-1789417838252-bd6918",
+    "title": "Call plumber",
+    "category": "Home",
+    "priority": "high",
+    "dueDate": "Tomorrow",
+    "completed": false,
+    "notes": "Fix sink leak"
+  },
+  {
+    "id": "task-1",
+    "title": "Buy groceries",
+    "category": "Shopping",
+    "priority": "high",
+    "dueDate": "Today",
+    "completed": true,
+    "notes": "Milk, eggs, bread, rice, and vegetables."
+  },
+  {
+    "id": "task-3",
+    "title": "Do laundry",
+    "category": "Household",
+    "priority": "low",
+    "dueDate": "This week",
+    "completed": true,
+    "notes": "Wash, dry, fold, and put away clothes."
+  }
+]
