@@ -5,13 +5,11 @@ WORKDIR /usr/src/app
 RUN apk add --no-cache curl
 
 COPY package*.json ./
-RUN npm ci --omit=dev
+RUN npm ci --omit=dev && npm cache clean --force
 
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+COPY --chown=node:node . .
 
-COPY --chown=appuser:appgroup . .
-
-USER appuser
+USER node
 
 EXPOSE 3000
 
