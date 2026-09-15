@@ -22,6 +22,7 @@ app.get('/health', async (req, res) => {
   res.json({
     status: 'ok',
     service: 'task-manager-api',
+    storage: store.hasMongo() ? 'mongodb' : 'json-file',
     dataFile: path.basename(store.dataFilePath),
     timestamp: new Date().toISOString(),
   });

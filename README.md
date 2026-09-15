@@ -37,6 +37,8 @@ npm install
 npm start
 ```
 
+If `MONGO_URI` is not set, the API falls back to the local JSON seed file for simple standalone development. In Docker Compose, the API uses MongoDB.
+
 ### Client
 ```bash
 cd client
@@ -59,6 +61,8 @@ Services:
 - Client: http://localhost:8080
 - MongoDB: internal only
 
+The Compose stack was validated with the API connected to MongoDB and reporting `"storage":"mongodb"` from the health endpoint.
+
 ## Docker Images
 
 ### API Image
@@ -80,6 +84,15 @@ kubectl apply -f k8s/
 ```
 
 The API service is exposed as a NodePort on port 30080.
+
+Validation performed on Kind:
+
+```bash
+kind create cluster --name task-manager
+kind load docker-image task-manager-api:latest --name task-manager
+kubectl apply -f k8s/
+kubectl rollout status deployment/task-manager-api --context kind-task-manager
+```
 
 ## Health Checks
 

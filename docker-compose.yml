@@ -1,8 +1,6 @@
-version: "3.9"
-
 services:
   mongo:
-    image: mongo:7-alpine
+    image: mongo:7
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
@@ -18,12 +16,14 @@ services:
       start_period: 20s
 
   api:
+    image: task-manager-api:latest
     build:
       context: ./app
     restart: unless-stopped
     environment:
       PORT: 3000
       MONGO_URI: mongodb://root:example@mongo:27017/taskplanner?authSource=admin
+      MONGO_DB_NAME: taskplanner
     depends_on:
       mongo:
         condition: service_healthy
@@ -37,6 +37,7 @@ services:
       start_period: 20s
 
   client:
+    image: task-manager-client:latest
     build:
       context: ./client
     restart: unless-stopped
