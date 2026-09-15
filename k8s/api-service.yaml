@@ -2,11 +2,14 @@ apiVersion: v1
 kind: Service
 metadata:
   name: task-manager-api
+  labels:
+    app: task-manager-api
+    component: api
 spec:
-  type: NodePort
+  type: ClusterIP
   selector:
     app: task-manager-api
   ports:
-    - port: 3000
+    - name: http
+      port: 3000
       targetPort: 3000
-      nodePort: 30080

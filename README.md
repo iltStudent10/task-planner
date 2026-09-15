@@ -83,7 +83,11 @@ Apply the API manifests to a Kind cluster:
 kubectl apply -f k8s/
 ```
 
-The API service is exposed as a NodePort on port 30080.
+The API service is exposed internally as a `ClusterIP` service. For local access on Kind, use port-forwarding:
+
+```bash
+kubectl port-forward service/task-manager-api 3000:3000 --context kind-task-manager
+```
 
 Validation performed on Kind:
 

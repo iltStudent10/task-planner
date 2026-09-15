@@ -81,7 +81,13 @@ This validates:
 - Deployment with 2 replicas
 - Resource requests and limits
 - Liveness and readiness probes
-- NodePort service
+- ClusterIP service with label-based routing
+
+To access the API from your machine during the demo, forward the service port:
+
+```bash
+kubectl port-forward service/task-manager-api 3000:3000 --context kind-task-manager
+```
 
 ## 7. Review the deployment document
 Open:
