@@ -39,6 +39,8 @@ npm start
 
 If `MONGO_URI` is not set, the API falls back to the local JSON seed file for simple standalone development. In Docker Compose, the API uses MongoDB.
 
+Authentication endpoints are available at `/api/auth/register`, `/api/auth/login`, and `/api/auth/me`. The API uses `JWT_SECRET` when provided, and falls back to a development secret for local runs.
+
 ### Client
 ```bash
 cd client
@@ -101,8 +103,8 @@ kubectl rollout status deployment/task-manager-api --context kind-task-manager
 ## Health Checks
 
 - API health endpoint: `/health`
-- API tasks endpoint: `/api/tasks`
-- API summary endpoint: `/api/summary`
+- API tasks endpoint: `/api/tasks` (requires a Bearer token after login)
+- API summary endpoint: `/api/summary` (requires a Bearer token after login)
 
 ## REST Examples
 

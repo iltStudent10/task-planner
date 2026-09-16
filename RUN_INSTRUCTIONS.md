@@ -19,6 +19,8 @@ This starts:
 - MongoDB
 - React client served by Nginx
 
+The client now includes register/login screens. Create an account or log in first, then the task dashboard loads with your saved session.
+
 ## 3. Verify the running application
 Open these URLs:
 
@@ -26,6 +28,8 @@ Open these URLs:
 - API health: http://localhost:3000/health
 - API tasks: http://localhost:3000/api/tasks
 - API summary: http://localhost:3000/api/summary
+
+The tasks and summary endpoints require authentication headers once a user is signed in.
 
 ## 4. Show the Assignment 9 Docker requirements
 The following files demonstrate the required Docker setup:
