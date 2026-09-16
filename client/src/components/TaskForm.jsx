@@ -1,7 +1,7 @@
-export default function TaskForm({ form, saving, errors, onChange, onSubmit }) {
+export default function TaskForm({ form, saving, errors, onChange, onSubmit, title = 'Add a task', submitLabel = 'Add task' }) {
   return (
     <article className="panel panel--wide">
-      <h2>Add a task</h2>
+      <h2>{title}</h2>
       <form className="form-grid" onSubmit={onSubmit}>
         <label>
           <span>Task</span>
@@ -30,7 +30,7 @@ export default function TaskForm({ form, saving, errors, onChange, onSubmit }) {
         </label>
         <label>
           <span>Due date</span>
-          <input name="dueDate" value={form.dueDate} onChange={onChange} placeholder="Today / Friday" aria-invalid={Boolean(errors?.dueDate)} />
+          <input name="dueDate" type="date" value={form.dueDate} onChange={onChange} aria-invalid={Boolean(errors?.dueDate)} />
           {errors?.dueDate ? <span className="field-error">{errors.dueDate}</span> : null}
         </label>
         <label className="form-grid__wide">
@@ -46,7 +46,7 @@ export default function TaskForm({ form, saving, errors, onChange, onSubmit }) {
           {errors?.notes ? <span className="field-error">{errors.notes}</span> : null}
         </label>
         <button className="button form-grid__wide" type="submit" disabled={saving}>
-          {saving ? 'Saving...' : 'Add task'}
+          {saving ? 'Saving...' : submitLabel}
         </button>
       </form>
     </article>

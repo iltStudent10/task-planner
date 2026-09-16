@@ -1,3 +1,5 @@
+import { Link } from 'react-router-dom';
+
 function TaskItem({ task, onToggleComplete, onDelete }) {
   return (
     <div className={`task task--${task.completed ? 'done' : 'open'}`}>
@@ -13,9 +15,14 @@ function TaskItem({ task, onToggleComplete, onDelete }) {
           </div>
         </div>
       </label>
-      <button className="button button--ghost" type="button" onClick={() => onDelete(task.id)}>
-        Delete
-      </button>
+      <div className="task__actions">
+        <Link className="button button--soft" to={`/tasks/${task.id}`}>
+          View details
+        </Link>
+        <button className="button button--ghost" type="button" onClick={() => onDelete(task.id)}>
+          Delete
+        </button>
+      </div>
     </div>
   );
 }

@@ -30,18 +30,29 @@ export default function AuthForm({ mode, form, submitting, errors, onChange, onM
 
       <form className="form-grid auth-form" onSubmit={onSubmit}>
         {mode === 'register' ? (
-          <label className="form-grid__wide">
-            <span>Name</span>
-            <input
-              name="name"
-              value={form.name}
-              onChange={onChange}
-              placeholder="Avery Smith"
-              autoComplete="name"
-              aria-invalid={Boolean(errors?.name)}
-            />
-            {errors?.name ? <span className="field-error">{errors.name}</span> : null}
-          </label>
+          <>
+            <label className="form-grid__wide">
+              <span>Name</span>
+              <input
+                name="name"
+                value={form.name}
+                onChange={onChange}
+                placeholder="Avery Smith"
+                autoComplete="name"
+                aria-invalid={Boolean(errors?.name)}
+              />
+              {errors?.name ? <span className="field-error">{errors.name}</span> : null}
+            </label>
+
+            <label className="form-grid__wide">
+              <span>Role</span>
+              <select name="role" value={form.role} onChange={onChange} aria-invalid={Boolean(errors?.role)}>
+                <option value="adjuster">Adjuster</option>
+                <option value="admin">Admin</option>
+              </select>
+              {errors?.role ? <span className="field-error">{errors.role}</span> : null}
+            </label>
+          </>
         ) : null}
 
         <label className="form-grid__wide">

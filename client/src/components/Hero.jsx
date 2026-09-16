@@ -1,4 +1,4 @@
-export default function Hero({ summary, totalTasks, completedTasks, openTasks, user, token, onLogout, onCopyToken }) {
+export default function Hero({ summary, totalTasks, completedTasks, openTasks, user, onLogout }) {
   return (
     <header className="hero">
       <div>
@@ -11,14 +11,6 @@ export default function Hero({ summary, totalTasks, completedTasks, openTasks, u
           <div className="hero__account">
             <span>{user.email}</span>
             <span>{user.role}</span>
-          </div>
-        ) : null}
-        {token ? (
-          <div className="hero__token">
-            <span>Access token ready for Postman</span>
-            <button className="button button--soft" type="button" onClick={onCopyToken}>
-              Copy token
-            </button>
           </div>
         ) : null}
       </div>

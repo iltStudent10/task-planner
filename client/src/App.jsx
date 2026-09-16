@@ -5,7 +5,7 @@ import TaskForm from './components/TaskForm';
 import TaskFilters from './components/TaskFilters';
 import TaskList from './components/TaskList';
 import ErrorAlert from './components/ErrorAlert';
-import { Link, Navigate, Route, Routes, useParams } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { parseJsonResponse, requestJson } from './api';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -23,6 +23,7 @@ const blankAuthForm = {
   name: '',
   email: '',
   password: '',
+  role: 'adjuster',
 };
 
 const blankFormErrors = {
@@ -37,6 +38,7 @@ const blankAuthErrors = {
   name: '',
   email: '',
   password: '',
+  role: '',
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -105,6 +107,10 @@ const validateAuthForm = (mode, value) => {
     errors.password = 'Password must be at least 8 characters.';
   }
 
+  if (mode === 'register' && !['adjuster', 'admin'].includes(String(value.role || ''))) {
+    errors.role = 'Choose a valid role.';
+  }
+
   return errors;
 };
 
@@ -112,11 +118,13 @@ const hasErrors = (errors) => Object.values(errors).some(Boolean);
 
 export default function App() {
   const { user, token, login, logout, isBootstrapping } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
+  const authMode = location.pathname === '/register' ? 'register' : 'login';
   const [summary, setSummary] = useState(null);
   const [tasks, setTasks] = useState([]);
   const [form, setForm] = useState(blankForm);
   const [authForm, setAuthForm] = useState(blankAuthForm);
-  const [authMode, setAuthMode] = useState('login');
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
   const [error, setError] = useState('');
@@ -124,19 +132,15 @@ export default function App() {
   const [authErrors, setAuthErrors] = useState(blankAuthErrors);
   const [saving, setSaving] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
-  const [policies, setPolicies] = useState([]);
-  const [claims, setClaims] = useState([]);
-  const [claimDetail, setClaimDetail] = useState(null);
-  const [claimDetailLoading, setClaimDetailLoading] = useState(false);
-  const [claimDetailError, setClaimDetailError] = useState('');
+  const [taskDetail, setTaskDetail] = useState(null);
+  const [taskDetailLoading, setTaskDetailLoading] = useState(false);
+  const [taskDetailError, setTaskDetailError] = useState('');
 
   const clearSession = (message = '') => {
     setSummary(null);
     setTasks([]);
-    setPolicies([]);
-    setClaims([]);
-    setClaimDetail(null);
-    setClaimDetailError('');
+    setTaskDetail(null);
+    setTaskDetailError('');
     setForm(blankForm);
     setTaskErrors(blankFormErrors);
     setAuthErrors(blankAuthErrors);
@@ -162,36 +166,34 @@ export default function App() {
       if (!authToken) {
         setSummary(null);
         setTasks([]);
-        setPolicies([]);
-        setClaims([]);
         return;
       }
 
-      const [summaryRes, tasksRes, policiesRes, claimsRes] = await Promise.all([
+      const [summaryRes, tasksRes] = await Promise.all([
         authFetch('/api/dashboard', {}, authToken),
         authFetch('/api/tasks', {}, authToken),
-        authFetch('/api/policies', {}, authToken),
-        authFetch('/api/claims', {}, authToken),
       ]);
 
-      if (!summaryRes.ok || !tasksRes.ok || !policiesRes.ok || !claimsRes.ok) {
+      if (!summaryRes.ok || !tasksRes.ok) {
         throw new Error('API request failed');
       }
 
       const summaryJson = await parseJsonResponse(summaryRes);
       const tasksJson = await parseJsonResponse(tasksRes);
-      const policiesJson = await parseJsonResponse(policiesRes);
-      const claimsJson = await parseJsonResponse(claimsRes);
       setSummary(summaryJson);
       setTasks(tasksJson.tasks || []);
-      setPolicies(policiesJson.policies || []);
-      setClaims(claimsJson.claims || []);
     } catch (err) {
       if (err.message !== 'Authentication required') {
         setError(err.message || 'Unable to load dashboard data');
       }
     }
   };
+
+  useEffect(() => {
+    if (token) {
+      loadData(token);
+    }
+  }, [token]);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -206,29 +208,10 @@ export default function App() {
   };
 
   const handleAuthModeChange = (nextMode) => {
-    setAuthMode(nextMode);
     setAuthForm((current) => (nextMode === 'login' ? { ...current, name: '' } : current));
     setAuthErrors(blankAuthErrors);
     setError('');
-  };
-
-  const handleSignOut = () => {
-    clearSession();
-    setError('');
-  };
-
-  const copyAccessToken = async () => {
-    if (!token) {
-      setError('No access token is available.');
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(token);
-      setError('Access token copied. Paste it into Postman as Bearer token.');
-    } catch {
-      setError('Unable to copy token automatically. You can copy it from local storage/session state.');
-    }
+    navigate(nextMode === 'register' ? '/register' : '/login');
   };
 
   const submitAuth = async (event) => {
@@ -248,7 +231,7 @@ export default function App() {
       const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
       const payload =
         authMode === 'register'
-          ? { name: authForm.name, email: authForm.email, password: authForm.password }
+          ? { name: authForm.name, email: authForm.email, password: authForm.password, role: authForm.role }
           : { email: authForm.email, password: authForm.password };
 
       const response = await requestJson(endpoint, {
@@ -295,11 +278,14 @@ export default function App() {
         throw new Error(await normalizeError(res, 'Unable to create task'));
       }
 
+      const body = await parseJsonResponse(res);
       setForm(blankForm);
       setTaskErrors(blankFormErrors);
       await loadData(token);
+      return body.task || null;
     } catch (err) {
       setError(err.message || 'Unable to create task');
+      return null;
     } finally {
       setSaving(false);
     }
@@ -327,10 +313,12 @@ export default function App() {
     try {
       await authFetch(`/api/tasks/${taskId}`, { method: 'DELETE' }, token);
       await loadData(token);
+      return true;
     } catch (err) {
       if (err.message !== 'Authentication required') {
         setError(err.message || 'Unable to delete task');
       }
+      return false;
     }
   };
 
@@ -342,43 +330,53 @@ export default function App() {
 
   const completedCount = tasks.filter((task) => task.completed).length;
   const openCount = tasks.length - completedCount;
+  const upcomingTasks = tasks
+    .filter((task) => !task.completed && task.dueDate)
+    .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())
+    .slice(0, 3);
+  const highPriorityOpenTasks = tasks
+    .filter((task) => !task.completed && task.priority === 'high')
+    .slice(0, 3);
+  const recentCompletedTasks = tasks
+    .filter((task) => task.completed)
+    .slice(0, 3);
 
-  const loadClaimDetail = async (claimId) => {
-      if (!token) {
+  const loadTaskDetail = async (taskId) => {
+    if (!token) {
       return null;
     }
 
-    setClaimDetailLoading(true);
-    setClaimDetailError('');
+    setTaskDetailLoading(true);
+    setTaskDetailError('');
 
     try {
-      const response = await authFetch(`/api/claims/${claimId}`, {}, token);
+      const response = await authFetch(`/api/tasks/${taskId}`, {}, token);
       if (!response.ok) {
-        throw new Error('Unable to load claim');
+        throw new Error('Unable to load task');
       }
 
       const body = await parseJsonResponse(response);
-      setClaimDetail(body.claim || null);
-      return body.claim || null;
+      setTaskDetail(body.task || null);
+      return body.task || null;
     } catch (err) {
-      setClaimDetailError(err.message || 'Unable to load claim');
+      setTaskDetailError(err.message || 'Unable to load task');
       return null;
     } finally {
-      setClaimDetailLoading(false);
+      setTaskDetailLoading(false);
     }
   };
 
-  const ProtectedFrame = ({ children }) => (
+  const renderProtectedFrame = (children) => (
     <div className="page">
-      <Navbar onCopyToken={copyAccessToken} />
+      <Navbar />
       {children}
     </div>
   );
 
-  const AuthScreen = ({ mode }) => {
+  const renderAuthScreen = (mode) => {
     const title = mode === 'login' ? 'Welcome back' : 'Create your account';
     const message = mode === 'login'
-      ? 'Log in to access your dashboard, policies, and claims.'
+      ? 'Log in to access your dashboard and tasks.'
       : 'Register to create your account and start tracking your work.';
 
     return (
@@ -404,150 +402,234 @@ export default function App() {
     );
   };
 
-  const ClaimsScreen = () => (
-    <ProtectedFrame>
+  const renderTasksScreen = () => renderProtectedFrame(
+    <>
       <header className="section-header">
         <div>
-          <span className="badge">Claims</span>
-          <h1>Claims</h1>
+          <span className="badge">Tasks</span>
+          <h1>Tasks</h1>
+        </div>
+        <div className="section-header__actions">
+          <Link className="button" to="/tasks/new">
+            Create task
+          </Link>
         </div>
       </header>
 
-      <section className="grid grid--single">
-        <article className="panel panel--wide">
-          <h2>All claims</h2>
-          <div className="cards cards--stacked">
-            {claims.map((claim) => (
-              <Link key={claim.id} to={`/claims/${claim.id}`} className="card card--link">
-                <h3>{claim.claimNumber}</h3>
-                <p>{claim.description}</p>
-                <div className="task-meta">
-                  <span>{claim.status}</span>
-                  <span>{claim.policy}</span>
-                  <span>${Number(claim.amount || 0).toFixed(2)}</span>
-                </div>
-              </Link>
-            ))}
-            {!claims.length ? <div className="empty">No claims available.</div> : null}
-          </div>
-        </article>
+      <section className="grid">
+        <TaskFilters search={search} filter={filter} onSearchChange={setSearch} onFilterChange={setFilter} />
+
+        <TaskList tasks={filteredTasks} onToggleComplete={toggleComplete} onDelete={deleteTask} />
       </section>
-    </ProtectedFrame>
+    </>,
   );
 
-  const PoliciesScreen = () => (
-    <ProtectedFrame>
+  const renderCreateTaskScreen = () => renderProtectedFrame(
+    <>
       <header className="section-header">
         <div>
-          <span className="badge">Policies</span>
-          <h1>Policies</h1>
+          <span className="badge">Create task</span>
+          <h1>New task</h1>
+        </div>
+        <div className="section-header__actions">
+          <Link className="button button--soft" to="/tasks">
+            Back to tasks
+          </Link>
         </div>
       </header>
 
-      <section className="grid grid--single">
-        <article className="panel panel--wide">
-          <h2>All policies</h2>
-          <div className="cards cards--stacked">
-            {policies.map((policy) => (
-              <article key={policy.id} className="card">
-                <h3>{policy.policyNumber}</h3>
-                <p>{policy.holderName}</p>
-                <div className="task-meta">
-                  <span>{policy.type}</span>
-                  <span>{policy.status}</span>
-                  <span>${Number(policy.premium || 0).toFixed(2)}</span>
-                </div>
-              </article>
-            ))}
-            {!policies.length ? <div className="empty">No policies available.</div> : null}
-          </div>
-        </article>
-      </section>
-    </ProtectedFrame>
+      <ErrorAlert message={error} />
+
+      <TaskForm
+        form={form}
+        saving={saving}
+        errors={taskErrors}
+        onChange={handleChange}
+        onSubmit={async (event) => {
+          const createdTask = await createTask(event);
+          if (createdTask?.id) {
+            navigate(`/tasks/${createdTask.id}`);
+          }
+        }}
+        title="Create a task"
+        submitLabel="Create task"
+      />
+    </>,
   );
 
-  const ClaimDetailScreen = () => {
+  const TaskDetailScreen = () => {
     const { id } = useParams();
-    const [localClaim, setLocalClaim] = useState(null);
+    const [localTask, setLocalTask] = useState(null);
 
     useEffect(() => {
-      const found = claims.find((claim) => claim.id === id);
+      const found = tasks.find((task) => task.id === id);
       if (found) {
-        setLocalClaim(found);
-        setClaimDetail(found);
+        setLocalTask(found);
+        setTaskDetail(found);
         return;
       }
 
-      loadClaimDetail(id).then((loaded) => setLocalClaim(loaded));
-    }, [id]);
+      loadTaskDetail(id).then((loaded) => setLocalTask(loaded));
+    }, [id, tasks]);
 
-    const claim = localClaim || claimDetail;
+    const task = localTask || taskDetail;
+
+    const handleDeleteFromDetail = async () => {
+      const removed = await deleteTask(id);
+      if (removed) {
+        navigate('/tasks');
+      }
+    };
 
     return (
-      <ProtectedFrame>
-        <header className="section-header">
-          <div>
-            <span className="badge">Claim detail</span>
-            <h1>{claim?.claimNumber || 'Claim'}</h1>
-          </div>
-        </header>
-
-        {claimDetailLoading ? <div className="loading-card">Loading claim...</div> : null}
-        {claimDetailError ? <ErrorAlert message={claimDetailError} /> : null}
-
-        {claim ? (
-          <article className="panel panel--wide">
-            <h2>Details</h2>
-            <div className="cards cards--stacked">
-              <article className="card">
-                <h3>{claim.claimNumber}</h3>
-                <p>{claim.description}</p>
-                <div className="task-meta">
-                  <span>{claim.status}</span>
-                  <span>Policy: {claim.policy}</span>
-                  <span>Incident: {claim.incidentDate}</span>
-                  <span>Amount: ${Number(claim.amount || 0).toFixed(2)}</span>
-                </div>
-              </article>
-              <article className="card">
-                <h3>Notes</h3>
-                <div className="list">
-                  {(claim.notes || []).map((note, noteIndex) => (
-                    <div key={`${note.createdAt || noteIndex}-${noteIndex}`}>
-                      <strong>{note.author || 'System'}</strong>
-                      <p>{note.text}</p>
-                    </div>
-                  ))}
-                  {!claim.notes?.length ? <div className="empty">No notes added.</div> : null}
-                </div>
-              </article>
+      renderProtectedFrame(
+        <>
+          <header className="section-header">
+            <div>
+              <span className="badge">Task detail</span>
+              <h1>{task?.title || 'Task'}</h1>
             </div>
-          </article>
-        ) : null}
-      </ProtectedFrame>
+          </header>
+
+          {taskDetailLoading ? <div className="loading-card">Loading task...</div> : null}
+          {taskDetailError ? <ErrorAlert message={taskDetailError} /> : null}
+
+          {task ? (
+            <article className="panel panel--wide">
+              <h2>Details</h2>
+              <div className="cards cards--stacked">
+                <article className="card">
+                  <h3>{task.title}</h3>
+                  <p>{task.notes || 'No notes provided.'}</p>
+                  <div className="task-meta">
+                    <span>{task.completed ? 'Completed' : 'Open'}</span>
+                    <span>{task.category || 'General'}</span>
+                    <span>{task.priority}</span>
+                    <span>{task.dueDate || 'No due date'}</span>
+                  </div>
+                </article>
+                <article className="card">
+                  <h3>Actions</h3>
+                  <div className="task-detail__actions">
+                    <button className="button" type="button" onClick={() => toggleComplete(task)}>
+                      {task.completed ? 'Mark open' : 'Mark complete'}
+                    </button>
+                    <button className="button button--ghost" type="button" onClick={handleDeleteFromDetail}>
+                      Delete task
+                    </button>
+                  </div>
+                </article>
+              </div>
+            </article>
+          ) : null}
+        </>,
+      )
     );
   };
 
-  const DashboardScreen = () => (
+  const renderDashboardScreen = () => (
     <div className="page">
-      <Navbar onCopyToken={copyAccessToken} />
+      <Navbar />
       <Hero
         summary={summary}
         totalTasks={tasks.length}
         completedTasks={completedCount}
         openTasks={openCount}
         user={user}
-        token={token}
       />
 
       <ErrorAlert message={error} />
 
-      <section className="grid">
-        <TaskForm form={form} saving={saving} errors={taskErrors} onChange={handleChange} onSubmit={createTask} />
+      <header className="section-header">
+        <div>
+          <span className="badge">Overview</span>
+          <h1>Your tasks</h1>
+        </div>
+        <div className="section-header__actions">
+          <Link className="button" to="/tasks/new">
+            Create task
+          </Link>
+          <Link className="button button--soft" to="/tasks">
+            View all tasks
+          </Link>
+        </div>
+      </header>
 
-        <TaskFilters search={search} filter={filter} onSearchChange={setSearch} onFilterChange={setFilter} />
+      <section className="cards dashboard-overview">
+        <article className="card dashboard-card">
+          <div className="dashboard-card__header">
+            <div>
+              <h2>Upcoming</h2>
+              <p>Open tasks with the closest due dates.</p>
+            </div>
+            <span className="badge">{upcomingTasks.length}</span>
+          </div>
+          <div className="dashboard-preview-list">
+            {upcomingTasks.map((task) => (
+              <Link key={task.id} to={`/tasks/${task.id}`} className="dashboard-preview-item">
+                <strong>{task.title}</strong>
+                <div className="task-meta">
+                  <span>{task.dueDate}</span>
+                  <span>{task.priority}</span>
+                </div>
+              </Link>
+            ))}
+            {!upcomingTasks.length ? <div className="empty">No upcoming due dates.</div> : null}
+          </div>
+        </article>
 
-        <TaskList tasks={filteredTasks} onToggleComplete={toggleComplete} onDelete={deleteTask} />
+        <article className="card dashboard-card">
+          <div className="dashboard-card__header">
+            <div>
+              <h2>High priority</h2>
+              <p>The tasks that need attention first.</p>
+            </div>
+            <span className="badge">{highPriorityOpenTasks.length}</span>
+          </div>
+          <div className="dashboard-preview-list">
+            {highPriorityOpenTasks.map((task) => (
+              <div key={task.id} className="dashboard-preview-item">
+                <strong>{task.title}</strong>
+                <div className="task-meta">
+                  <span>{task.category || 'General'}</span>
+                  <span>{task.dueDate || 'No due date'}</span>
+                </div>
+                <div className="task-detail__actions">
+                  <button className="button button--soft" type="button" onClick={() => toggleComplete(task)}>
+                    Mark complete
+                  </button>
+                  <Link className="button button--ghost" to={`/tasks/${task.id}`}>
+                    Open
+                  </Link>
+                </div>
+              </div>
+            ))}
+            {!highPriorityOpenTasks.length ? <div className="empty">No high-priority open tasks.</div> : null}
+          </div>
+        </article>
+
+        <article className="card dashboard-card dashboard-card--wide">
+          <div className="dashboard-card__header">
+            <div>
+              <h2>Recently completed</h2>
+              <p>A quick look at what has already been finished.</p>
+            </div>
+            <span className="badge">{recentCompletedTasks.length}</span>
+          </div>
+          <div className="dashboard-preview-list">
+            {recentCompletedTasks.map((task) => (
+              <Link key={task.id} to={`/tasks/${task.id}`} className="dashboard-preview-item dashboard-preview-item--done">
+                <strong>{task.title}</strong>
+                <div className="task-meta">
+                  <span>{task.category || 'General'}</span>
+                  <span>{task.priority}</span>
+                  <span>{task.dueDate || 'No due date'}</span>
+                </div>
+              </Link>
+            ))}
+            {!recentCompletedTasks.length ? <div className="empty">No completed tasks yet.</div> : null}
+          </div>
+        </article>
       </section>
     </div>
   );
@@ -562,37 +644,37 @@ export default function App() {
 
   return (
     <Routes>
-      <Route path="/login" element={token ? <Navigate to="/" replace /> : <AuthScreen mode="login" />} />
-      <Route path="/register" element={token ? <Navigate to="/" replace /> : <AuthScreen mode="register" />} />
+      <Route path="/login" element={token ? <Navigate to="/" replace /> : renderAuthScreen('login')} />
+      <Route path="/register" element={token ? <Navigate to="/" replace /> : renderAuthScreen('register')} />
       <Route
         path="/"
         element={
           <ProtectedRoute>
-            <DashboardScreen />
+            {renderDashboardScreen()}
           </ProtectedRoute>
         }
       />
       <Route
-        path="/policies"
+        path="/tasks"
         element={
           <ProtectedRoute>
-            <PoliciesScreen />
+            {renderTasksScreen()}
           </ProtectedRoute>
         }
       />
       <Route
-        path="/claims"
+        path="/tasks/new"
         element={
           <ProtectedRoute>
-            <ClaimsScreen />
+            {renderCreateTaskScreen()}
           </ProtectedRoute>
         }
       />
       <Route
-        path="/claims/:id"
+        path="/tasks/:id"
         element={
           <ProtectedRoute>
-            <ClaimDetailScreen />
+            <TaskDetailScreen />
           </ProtectedRoute>
         }
       />
