@@ -1,7 +1,9 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const { body } = require('express-validator');
 const userStore = require('../data/userStore');
 const authenticate = require('../middleware/authenticate');
+const handleValidationErrors = require('../middleware/handleValidationErrors');
 
 const router = express.Router();
 
@@ -17,23 +19,17 @@ const buildToken = (user) =>
     { expiresIn: '7d' },
   );
 
-const sendValidationError = (res, message) => res.status(400).json({ error: message });
-
-router.post('/register', async (req, res, next) => {
+router.post(
+  '/register',
+  [
+    body('name').trim().notEmpty().withMessage('Name is required'),
+    body('email').trim().isEmail().withMessage('Email must be a valid email address').normalizeEmail(),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    handleValidationErrors,
+  ],
+  async (req, res, next) => {
   try {
     const { name, email, password } = req.body || {};
-
-    if (!name || !String(name).trim()) {
-      return sendValidationError(res, 'Name is required');
-    }
-
-    if (!email || !String(email).trim()) {
-      return sendValidationError(res, 'Email is required');
-    }
-
-    if (!password || String(password).length < 8) {
-      return sendValidationError(res, 'Password must be at least 8 characters');
-    }
 
     const existing = await userStore.getByEmail(email);
     if (existing) {
@@ -47,19 +43,19 @@ router.post('/register', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+  },
+);
 
-router.post('/login', async (req, res, next) => {
+router.post(
+  '/login',
+  [
+    body('email').trim().isEmail().withMessage('Email must be a valid email address').normalizeEmail(),
+    body('password').notEmpty().withMessage('Password is required'),
+    handleValidationErrors,
+  ],
+  async (req, res, next) => {
   try {
     const { email, password } = req.body || {};
-
-    if (!email || !String(email).trim()) {
-      return sendValidationError(res, 'Email is required');
-    }
-
-    if (!password) {
-      return sendValidationError(res, 'Password is required');
-    }
 
     const user = await userStore.verifyCredentials({ email, password });
     if (!user) {
@@ -71,7 +67,8 @@ router.post('/login', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+  },
+);
 
 router.get('/me', authenticate, async (req, res) => {
   return res.json({ user: req.user });

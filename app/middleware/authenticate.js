@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const userStore = require('../data/userStore');
+const createHttpError = require('./httpError');
 
 const authenticate = async (req, res, next) => {
   try {
@@ -7,20 +8,24 @@ const authenticate = async (req, res, next) => {
     const token = authorization.startsWith('Bearer ') ? authorization.slice(7) : null;
 
     if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
+      throw createHttpError(401, 'Authentication required');
     }
 
     const payload = jwt.verify(token, userStore.JWT_SECRET);
     const user = await userStore.getById(payload.sub);
 
     if (!user) {
-      return res.status(401).json({ error: 'Authentication required' });
+      throw createHttpError(401, 'Authentication required');
     }
 
     req.user = userStore.toPublicUser(user);
     next();
   } catch (error) {
-    return res.status(401).json({ error: 'Authentication required' });
+    if (error && error.statusCode) {
+      return next(error);
+    }
+
+    return next(createHttpError(401, 'Authentication required'));
   }
 };
 

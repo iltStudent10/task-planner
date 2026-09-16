@@ -1,0 +1,18 @@
+[
+  {
+    "id": "claim-1789572054361-c46637",
+    "claimNumber": "CLM-1001",
+    "policy": "policy-1789572054311-542804",
+    "incidentDate": "2026-09-01",
+    "amount": 2500,
+    "description": "Wind damage",
+    "status": "under-review",
+    "assignedTo": "adjuster-1",
+    "notes": [
+      {
+        "text": "Initial note for review"
+      }
+    ],
+    "createdAt": "2026-09-16T15:20:54.361Z"
+  }
+]

@@ -8,7 +8,11 @@ const dataFilePath = path.join(__dirname, 'users.json');
 let client;
 let collection;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'task-planner-dev-secret';
+const JWT_SECRET = process.env.JWT_SECRET || (process.env.NODE_ENV === 'production' ? null : 'task-planner-dev-secret');
+
+if (!JWT_SECRET && process.env.NODE_ENV === 'production') {
+  throw new Error('JWT_SECRET must be set when NODE_ENV=production');
+}
 
 const hasMongo = () => Boolean(process.env.MONGO_URI);
 
@@ -56,7 +60,7 @@ const getCollection = async () => {
   client = new MongoClient(process.env.MONGO_URI);
   await client.connect();
 
-  const databaseName = process.env.MONGO_DB_NAME || 'taskplanner';
+  const databaseName = process.env.MONGO_DB_NAME || 'policy-claims';
   collection = client.db(databaseName).collection('users');
 
   await collection.createIndex({ email: 1 }, { unique: true });

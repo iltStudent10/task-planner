@@ -1,0 +1,14 @@
+[
+  {
+    "id": "policy-1789572054311-542804",
+    "policyNumber": "POL-1001",
+    "holderName": "Smoke Holder",
+    "type": "auto",
+    "premium": 1200,
+    "status": "active",
+    "effectiveDate": "2026-09-01",
+    "expirationDate": "2027-09-01",
+    "owner": "Smoke User",
+    "createdAt": "2026-09-16T15:20:54.311Z"
+  }
+]

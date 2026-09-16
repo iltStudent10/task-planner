@@ -39,7 +39,7 @@ const getCollection = async () => {
   client = new MongoClient(process.env.MONGO_URI);
   await client.connect();
 
-  const databaseName = process.env.MONGO_DB_NAME || 'taskplanner';
+  const databaseName = process.env.MONGO_DB_NAME || 'policy-claims';
   collection = client.db(databaseName).collection('tasks');
 
   await collection.createIndex({ id: 1 }, { unique: true });

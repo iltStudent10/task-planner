@@ -1,5 +1,21 @@
 [
   {
+    "id": "user-1789572045952-41491c",
+    "name": "Smoke User",
+    "email": "smoke@example.com",
+    "passwordHash": "$2b$10$GaDJzbAjhatJns.hiiEhY.C9cHCgpC0msBDnhNI7uOyMx4VGRX42S",
+    "role": "user",
+    "createdAt": "2026-09-16T15:20:45.952Z"
+  },
+  {
+    "id": "user-1789571996009-af8312",
+    "name": "Test User",
+    "email": "testuser@example.com",
+    "passwordHash": "$2b$10$sVgb.CMQakVu5OfAzY7nQ.VxAm6W7jKWWs8MjZtPGkCB7k7/JXOku",
+    "role": "user",
+    "createdAt": "2026-09-16T15:19:56.009Z"
+  },
+  {
     "id": "user-1789569269911-efc821",
     "name": "Michaela Peterson",
     "email": "test@test.com",

@@ -1,9 +1,9 @@
 const express = require('express');
+const { body } = require('express-validator');
 const store = require('../data/taskStore');
+const handleValidationErrors = require('../middleware/handleValidationErrors');
 
 const router = express.Router();
-
-const sendValidationError = (res, message) => res.status(400).json({ error: message });
 
 router.get('/', async (req, res, next) => {
   try {
@@ -48,26 +48,43 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
-router.post('/', async (req, res, next) => {
+router.post(
+  '/',
+  [
+    body('title').trim().notEmpty().withMessage('Task title is required'),
+    body('category').optional({ nullable: true }).isString().withMessage('Category must be a string'),
+    body('priority').optional({ nullable: true }).isIn(['low', 'medium', 'high']).withMessage('Priority must be low, medium, or high'),
+    body('dueDate').optional({ nullable: true }).isISO8601().withMessage('Due date must be a valid date'),
+    body('completed').optional({ nullable: true }).isBoolean().withMessage('Completed must be a boolean'),
+    body('notes').optional({ nullable: true }).isString().withMessage('Notes must be a string'),
+    handleValidationErrors,
+  ],
+  async (req, res, next) => {
   try {
     const { title, category, priority, dueDate, completed, notes } = req.body || {};
-    if (!title || !String(title).trim()) {
-      return sendValidationError(res, 'Task title is required');
-    }
 
     const task = await store.create({ title, category, priority, dueDate, completed, notes });
     return res.status(201).json({ task });
   } catch (error) {
     next(error);
   }
-});
+  },
+);
 
-router.put('/:id', async (req, res, next) => {
+router.put(
+  '/:id',
+  [
+    body('title').trim().notEmpty().withMessage('Task title is required'),
+    body('category').optional({ nullable: true }).isString().withMessage('Category must be a string'),
+    body('priority').optional({ nullable: true }).isIn(['low', 'medium', 'high']).withMessage('Priority must be low, medium, or high'),
+    body('dueDate').optional({ nullable: true }).isISO8601().withMessage('Due date must be a valid date'),
+    body('completed').optional({ nullable: true }).isBoolean().withMessage('Completed must be a boolean'),
+    body('notes').optional({ nullable: true }).isString().withMessage('Notes must be a string'),
+    handleValidationErrors,
+  ],
+  async (req, res, next) => {
   try {
     const { title, category, priority, dueDate, completed, notes } = req.body || {};
-    if (!title || !String(title).trim()) {
-      return sendValidationError(res, 'Task title is required');
-    }
 
     const updated = await store.update(req.params.id, { title, category, priority, dueDate, completed, notes });
     if (!updated) return res.status(404).json({ error: 'Task not found' });
@@ -75,7 +92,8 @@ router.put('/:id', async (req, res, next) => {
   } catch (error) {
     next(error);
   }
-});
+  },
+);
 
 router.patch('/:id', async (req, res, next) => {
   try {
