@@ -25,18 +25,19 @@ router.post(
     body('name').trim().notEmpty().withMessage('Name is required'),
     body('email').trim().isEmail().withMessage('Email must be a valid email address').normalizeEmail(),
     body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters'),
+    body('role').optional().isIn(['adjuster', 'admin']).withMessage('Role must be adjuster or admin'),
     handleValidationErrors,
   ],
   async (req, res, next) => {
   try {
-    const { name, email, password } = req.body || {};
+    const { name, email, password, role } = req.body || {};
 
     const existing = await userStore.getByEmail(email);
     if (existing) {
       return res.status(409).json({ error: 'Email is already registered' });
     }
 
-    const user = await userStore.create({ name, email, password });
+    const user = await userStore.create({ name, email, password, role });
     const token = buildToken(user);
 
     return res.status(201).json({ user, token });

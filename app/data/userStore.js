@@ -23,8 +23,9 @@ const toPublicUser = (user) => {
     return user;
   }
 
-  const { _id, passwordHash, ...publicUser } = user;
-  return publicUser;
+  const { _id, passwordHash, role, ...publicUser } = user;
+  const normalizedRole = role === 'user' ? 'adjuster' : role || 'adjuster';
+  return { ...publicUser, role: normalizedRole };
 };
 
 const normalizeEmail = (email) => String(email || '').trim().toLowerCase();
@@ -122,16 +123,17 @@ const getById = async (id) => {
   return users.find((user) => user.id === id) || null;
 };
 
-const create = async ({ name, email, password, role = 'user' }) => {
+const create = async ({ name, email, password, role = 'adjuster' }) => {
   const normalizedEmail = normalizeEmail(email);
   const passwordHash = await bcrypt.hash(password, 10);
+  const normalizedRole = ['adjuster', 'admin'].includes(role) ? role : 'adjuster';
 
   const user = {
     id: generateId(),
     name: String(name || '').trim(),
     email: normalizedEmail,
     passwordHash,
-    role,
+    role: normalizedRole,
     createdAt: new Date().toISOString(),
   };
 
