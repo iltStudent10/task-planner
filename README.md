@@ -41,6 +41,26 @@ If `MONGO_URI` is not set, the API falls back to the local JSON seed file for si
 
 Authentication endpoints are available at `/api/auth/register`, `/api/auth/login`, and `/api/auth/me`. The API uses `JWT_SECRET` when provided, and falls back to a development secret for local runs.
 
+For Postman, use the token returned from `/api/auth/register` or `/api/auth/login` in the request header: `Authorization: Bearer <token>`. In the live app, the token is stored in the session and automatically attached to protected requests.
+
+The dashboard endpoint is available at `/api/dashboard` and returns task totals, open vs. completed counts, categories, and priority breakdowns.
+
+Policy Claims Tracker endpoints from the PDF are also available:
+
+- `GET /api/dashboard`
+- `GET /api/policies`
+- `POST /api/policies`
+- `GET /api/policies/:id`
+- `PUT /api/policies/:id`
+- `DELETE /api/policies/:id`
+- `GET /api/claims`
+- `POST /api/claims`
+- `GET /api/claims/stats`
+- `GET /api/claims/:id`
+- `PUT /api/claims/:id`
+- `DELETE /api/claims/:id`
+- `POST /api/claims/:id/notes`
+
 ### Client
 ```bash
 cd client
@@ -103,6 +123,9 @@ kubectl rollout status deployment/task-manager-api --context kind-task-manager
 ## Health Checks
 
 - API health endpoint: `/health`
+- API dashboard endpoint: `/api/dashboard` (requires a Bearer token after login)
+- API policies endpoint: `/api/policies` (requires a Bearer token after login)
+- API claims endpoint: `/api/claims` (requires a Bearer token after login)
 - API tasks endpoint: `/api/tasks` (requires a Bearer token after login)
 - API summary endpoint: `/api/summary` (requires a Bearer token after login)
 

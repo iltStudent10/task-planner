@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mongo
+  labels:
+    app: task-manager
+    component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: task-manager
+      component: database
+  template:
+    metadata:
+      labels:
+        app: task-manager
+        component: database
+    spec:
+      containers:
+        - name: mongo
+          image: mongo:7
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              value: root
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              value: example
+            - name: MONGO_INITDB_DATABASE
+              value: policy-claims
+          volumeMounts:
+            - name: mongo-data
+              mountPath: /data/db
+      volumes:
+        - name: mongo-data
+          persistentVolumeClaim:
+            claimName: mongo-data

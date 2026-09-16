@@ -31,6 +31,12 @@ spec:
               value: "3000"
             - name: NODE_ENV
               value: "production"
+            - name: MONGO_URI
+              value: "mongodb://root:example@mongo:27017/policy-claims?authSource=admin"
+            - name: MONGO_DB_NAME
+              value: "policy-claims"
+            - name: JWT_SECRET
+              value: "change-me-in-production"
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
