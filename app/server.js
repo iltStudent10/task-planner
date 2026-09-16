@@ -13,10 +13,8 @@ const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
 const authenticate = require('./middleware/authenticate');
 const authRoutes = require('./routes/authRoutes');
-const taskRoutes = require('./routes/taskRoutes');
 const policyRoutes = require('./routes/policyRoutes');
 const claimRoutes = require('./routes/claimRoutes');
-const store = require('./data/taskStore');
 const policyStore = require('./data/policyStore');
 const claimStore = require('./data/claimStore');
 const userStore = require('./data/userStore');
@@ -76,9 +74,9 @@ app.use(requestLogger);
 app.get('/health', async (req, res) => {
   res.json({
     status: 'ok',
-    service: 'task-manager-api',
-    storage: store.hasMongo() ? 'mongodb' : 'json-file',
-    dataFile: path.basename(store.dataFilePath),
+    service: 'policy-claims-api',
+    storage: policyStore.hasMongo() ? 'mongodb' : 'json-file',
+    dataFile: path.basename(policyStore.dataFilePath),
     timestamp: new Date().toISOString(),
   });
 });
@@ -86,15 +84,6 @@ app.get('/health', async (req, res) => {
 app.use('/api/auth', authRoutes);
 
 const buildDashboard = async () => {
-  const tasks = await store.getAll();
-  const completedTasks = tasks.filter((task) => task.completed).length;
-  const openTasks = tasks.length - completedTasks;
-  const categories = [...new Set(tasks.map((task) => task.category || 'General'))].sort();
-  const priorityBreakdown = {
-    low: tasks.filter((task) => task.priority === 'low').length,
-    medium: tasks.filter((task) => task.priority === 'medium').length,
-    high: tasks.filter((task) => task.priority === 'high').length,
-  };
   const policies = await policyStore.getAll();
   const claims = await claimStore.getAll();
   const policyStatuses = {
@@ -111,12 +100,7 @@ const buildDashboard = async () => {
   };
 
   return {
-    name: 'Task Manager App',
-    totalTasks: tasks.length,
-    completedTasks,
-    openTasks,
-    categories,
-    priorityBreakdown,
+    name: 'Policy Claims Tracker',
     totalPolicies: policies.length,
     policyStatuses,
     totalClaims: claims.length,
@@ -137,17 +121,16 @@ const sendDashboard = async (req, res, next) => {
 app.get('/api/dashboard', authenticate, sendDashboard);
 app.get('/api/summary', authenticate, sendDashboard);
 
-app.use('/api/tasks', authenticate, taskRoutes);
 app.use('/api/policies', authenticate, policyRoutes);
 app.use('/api/claims', authenticate, claimRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
 const start = async (port = configuredPort) => {
-  await Promise.all([store.seedIfEmpty(), policyStore.seedIfEmpty(), claimStore.seedIfEmpty(), userStore.seedIfEmpty()]);
+  await Promise.all([policyStore.seedIfEmpty(), claimStore.seedIfEmpty(), userStore.seedIfEmpty()]);
 
   const server = app.listen(port, () => {
-    console.log(`Task Manager API listening on port ${port}`);
+    console.log(`Policy Claims API listening on port ${port}`);
   });
 
   server.on('error', (error) => {
