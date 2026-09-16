@@ -1,0 +1,10 @@
+[
+  {
+    "id": "user-1789569269911-efc821",
+    "name": "Michaela Peterson",
+    "email": "test@test.com",
+    "passwordHash": "$2b$10$67eZ3FFNL8XOdrbWstrDpef1klOHxngCdUioU5gvu/4k1SGIVg7j6",
+    "role": "user",
+    "createdAt": "2026-09-16T14:34:29.912Z"
+  }
+]

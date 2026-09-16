@@ -3,16 +3,19 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
 
+dotenv.config();
+
 const requestLogger = require('./middleware/requestLogger');
 const notFound = require('./middleware/notFound');
 const errorHandler = require('./middleware/errorHandler');
+const authenticate = require('./middleware/authenticate');
+const authRoutes = require('./routes/authRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const store = require('./data/taskStore');
-
-dotenv.config();
+const userStore = require('./data/userStore');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const configuredPort = process.env.PORT ? Number(process.env.PORT) : 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -28,7 +31,9 @@ app.get('/health', async (req, res) => {
   });
 });
 
-app.get('/api/summary', async (req, res, next) => {
+app.use('/api/auth', authRoutes);
+
+app.get('/api/summary', authenticate, async (req, res, next) => {
   try {
     const tasks = await store.getAll();
     const completedTasks = tasks.filter((task) => task.completed).length;
@@ -46,14 +51,29 @@ app.get('/api/summary', async (req, res, next) => {
   }
 });
 
-app.use('/api/tasks', taskRoutes);
+app.use('/api/tasks', authenticate, taskRoutes);
 app.use(notFound);
 app.use(errorHandler);
 
-const start = async () => {
-  await store.seedIfEmpty();
-  app.listen(port, () => {
+const start = async (port = configuredPort) => {
+  await Promise.all([store.seedIfEmpty(), userStore.seedIfEmpty()]);
+
+  const server = app.listen(port, () => {
     console.log(`Task Manager API listening on port ${port}`);
+  });
+
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE' && !process.env.PORT && port < 3010) {
+      console.warn(`Port ${port} is busy, retrying on ${port + 1}`);
+      start(port + 1).catch((startError) => {
+        console.error(startError);
+        process.exit(1);
+      });
+      return;
+    }
+
+    console.error(error);
+    process.exit(1);
   });
 };
 
