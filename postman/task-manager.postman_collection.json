@@ -1,9 +1,9 @@
 {
   "info": {
-    "name": "Task Manager API",
-    "description": "Postman collection for the Task Manager API. Register or log in first to capture a bearer token into the collection variable `token`.",
+    "name": "Policy Claims Tracker API",
+    "description": "Postman collection for the Policy Claims Tracker demo. Run Register or Login first to store the JWT in the collection variable `token`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "4cbf65a7-a4eb-40bf-b9c8-b0a8c76f5da5"
+    "_postman_id": "55042d30-6eb3-4e90-8249-d6b6a7ca449d"
   },
   "variable": [
     {
@@ -15,7 +15,11 @@
       "value": ""
     },
     {
-      "key": "taskId",
+      "key": "policyId",
+      "value": ""
+    },
+    {
+      "key": "claimId",
       "value": ""
     }
   ],
@@ -46,8 +50,7 @@
           "path": [
             "health"
           ]
-        },
-        "description": "Public health check for the API service."
+        }
       }
     },
     {
@@ -61,17 +64,13 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('register returns success', function () {",
-                  "    pm.expect([200, 201, 409]).to.include(pm.response.code);",
+                  "pm.test('register success or existing user', function () {",
+                  "  pm.expect([201, 409]).to.include(pm.response.code);",
                   "});",
-                  "",
-                  "if (pm.response.code === 200 || pm.response.code === 201) {",
-                  "    var body = pm.response.json();",
-                  "    if (body.token) {",
-                  "        pm.collectionVariables.set('token', body.token);",
-                  "    }",
-                  "}",
-                  ""
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body.token) pm.collectionVariables.set('token', body.token);",
+                  "}"
                 ]
               }
             }
@@ -89,7 +88,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Postman User\",\n  \"email\": \"postman.user@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"adjuster\"\n}"
+              "raw": "{\n  \"name\": \"Postman Demo User\",\n  \"email\": \"postman.demo@example.com\",\n  \"password\": \"password123\",\n  \"role\": \"adjuster\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/register",
@@ -101,8 +100,7 @@
                 "auth",
                 "register"
               ]
-            },
-            "description": "Create a user account. On success, saves the returned JWT into the collection variable `token`."
+            }
           }
         },
         {
@@ -113,15 +111,11 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('login returns success', function () {",
-                  "    pm.response.to.have.status(200);",
+                  "pm.test('login success', function () {",
+                  "  pm.response.to.have.status(200);",
                   "});",
-                  "",
-                  "var body = pm.response.json();",
-                  "if (body.token) {",
-                  "    pm.collectionVariables.set('token', body.token);",
-                  "}",
-                  ""
+                  "const body = pm.response.json();",
+                  "if (body.token) pm.collectionVariables.set('token', body.token);"
                 ]
               }
             }
@@ -139,7 +133,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"postman.user@example.com\",\n  \"password\": \"password123\"\n}"
+              "raw": "{\n  \"email\": \"test@test.com\",\n  \"password\": \"test1234\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/auth/login",
@@ -151,8 +145,7 @@
                 "auth",
                 "login"
               ]
-            },
-            "description": "Log in and save the returned JWT into the collection variable `token`."
+            }
           }
         },
         {
@@ -170,8 +163,7 @@
                 "auth",
                 "me"
               ]
-            },
-            "description": "Protected route. Sends `Authorization: Bearer {{token}}`."
+            }
           }
         }
       ]
@@ -193,8 +185,7 @@
                 "api",
                 "dashboard"
               ]
-            },
-            "description": "Protected route for dashboard metrics."
+            }
           }
         },
         {
@@ -211,78 +202,44 @@
                 "api",
                 "summary"
               ]
-            },
-            "description": "Protected alias for the dashboard response."
+            }
           }
         }
       ]
     },
     {
-      "name": "Tasks",
+      "name": "Policies",
       "item": [
         {
-          "name": "List Tasks",
+          "name": "List Policies",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/tasks",
+              "raw": "{{baseUrl}}/api/policies",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "tasks"
+                "policies"
               ]
-            },
-            "description": "Protected route that returns all tasks."
+            }
           }
         },
         {
-          "name": "Search Open Tasks",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/api/tasks?search=buy&completed=false",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "tasks"
-              ],
-              "query": [
-                {
-                  "key": "search",
-                  "value": "buy"
-                },
-                {
-                  "key": "completed",
-                  "value": "false"
-                }
-              ]
-            },
-            "description": "Protected filtered list example."
-          }
-        },
-        {
-          "name": "Create Task",
+          "name": "Create Policy",
           "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('create task returns created', function () {",
-                  "    pm.response.to.have.status(201);",
+                  "pm.test('create policy success', function () {",
+                  "  pm.response.to.have.status(201);",
                   "});",
-                  "",
-                  "var body = pm.response.json();",
-                  "if (body.task && body.task.id) {",
-                  "    pm.collectionVariables.set('taskId', body.task.id);",
-                  "}",
-                  ""
+                  "const body = pm.response.json();",
+                  "if (body.policy && body.policy.id) pm.collectionVariables.set('policyId', body.policy.id);"
                 ]
               }
             }
@@ -297,113 +254,145 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"title\": \"Postman task\",\n  \"category\": \"Testing\",\n  \"priority\": \"medium\",\n  \"dueDate\": \"2026-09-20\",\n  \"completed\": false,\n  \"notes\": \"Created from the Postman collection\"\n}"
+              "raw": "{\n  \"policyNumber\": \"POL-POSTMAN-1001\",\n  \"holderName\": \"Jordan Example\",\n  \"type\": \"auto\",\n  \"premium\": 425.5,\n  \"status\": \"active\",\n  \"effectiveDate\": \"2026-09-16\",\n  \"expirationDate\": \"2027-09-16\"\n}"
             },
             "url": {
-              "raw": "{{baseUrl}}/api/tasks",
+              "raw": "{{baseUrl}}/api/policies",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "tasks"
+                "policies"
               ]
-            },
-            "description": "Protected create route. Saves the created task id into `taskId`."
+            }
           }
         },
         {
-          "name": "Get Task By Id",
+          "name": "Get Policy By Id",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "raw": "{{baseUrl}}/api/policies/{{policyId}}",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "tasks",
-                "{{taskId}}"
+                "policies",
+                "{{policyId}}"
               ]
-            },
-            "description": "Protected task detail route."
+            }
           }
-        },
+        }
+      ]
+    },
+    {
+      "name": "Claims",
+      "item": [
         {
-          "name": "Replace Task",
+          "name": "List Claims",
           "request": {
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"Postman task updated\",\n  \"category\": \"Testing\",\n  \"priority\": \"high\",\n  \"dueDate\": \"2026-09-21\",\n  \"completed\": false,\n  \"notes\": \"Updated with PUT\"\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "tasks",
-                "{{taskId}}"
-              ]
-            },
-            "description": "Protected full task update route."
-          }
-        },
-        {
-          "name": "Mark Task Complete",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"completed\": true\n}"
-            },
-            "url": {
-              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "api",
-                "tasks",
-                "{{taskId}}"
-              ]
-            },
-            "description": "Protected partial task update route."
-          }
-        },
-        {
-          "name": "Delete Task",
-          "request": {
-            "method": "DELETE",
+            "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/api/tasks/{{taskId}}",
+              "raw": "{{baseUrl}}/api/claims",
               "host": [
                 "{{baseUrl}}"
               ],
               "path": [
                 "api",
-                "tasks",
-                "{{taskId}}"
+                "claims"
               ]
+            }
+          }
+        },
+        {
+          "name": "Create Claim",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('create claim success', function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "const body = pm.response.json();",
+                  "if (body.claim && body.claim.id) pm.collectionVariables.set('claimId', body.claim.id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"claimNumber\": \"CLM-POSTMAN-2001\",\n  \"policy\": \"{{policyId}}\",\n  \"incidentDate\": \"2026-09-15\",\n  \"amount\": 1200,\n  \"description\": \"Rear bumper damage from a parking lot collision\",\n  \"status\": \"submitted\",\n  \"assignedTo\": \"adjuster-01\"\n}"
             },
-            "description": "Protected delete route."
+            "url": {
+              "raw": "{{baseUrl}}/api/claims",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Claim By Id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/claims/{{claimId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims",
+                "{{claimId}}"
+              ]
+            }
+          }
+        },
+        {
+          "name": "Add Claim Note",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"text\": \"Followed up with the policy holder and requested supporting photos.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/claims/{{claimId}}/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "claims",
+                "{{claimId}}",
+                "notes"
+              ]
+            }
           }
         }
       ]

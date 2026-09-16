@@ -1,6 +1,6 @@
-# Task Manager App
+# Policy Claims Tracker
 
-This repository contains a daily task management application that helps users organize groceries, meals, errands, household chores, and other personal tasks.
+This repository contains a policy and claims tracking application with JWT-protected APIs, MongoDB persistence, a React frontend, Docker packaging, and Kubernetes deployment assets.
 
 - Dockerized Express API
 - Docker Compose multi-service setup with MongoDB
@@ -12,11 +12,11 @@ This repository contains a daily task management application that helps users or
 
 ## Example Uses
 
-- Grocery shopping lists
-- Cooking dinner plans
-- Household chores
-- Errands and reminders
-- Personal work or study tasks
+- Register insurance staff users
+- Create and review policy records
+- Create claims linked to policies
+- Track claim statuses and notes
+- Demonstrate protected dashboard metrics
 
 ## Project Structure
 
@@ -43,16 +43,24 @@ Authentication endpoints are available at `/api/auth/register`, `/api/auth/login
 
 For Postman, use the token returned from `/api/auth/register` or `/api/auth/login` in the request header: `Authorization: Bearer <token>`. In the live app, the token is stored in the session and automatically attached to protected requests.
 
-The dashboard endpoint is available at `/api/dashboard` and returns task totals, open vs. completed counts, categories, and priority breakdowns.
+The dashboard endpoint is available at `/api/dashboard` and returns policy and claim summary metrics used by the demo UI.
 
-Primary task endpoints:
+Primary policy endpoints:
 
-- `GET /api/tasks`
-- `POST /api/tasks`
-- `GET /api/tasks/:id`
-- `PUT /api/tasks/:id`
-- `PATCH /api/tasks/:id`
-- `DELETE /api/tasks/:id`
+- `GET /api/policies`
+- `POST /api/policies`
+- `GET /api/policies/:id`
+- `PUT /api/policies/:id`
+- `DELETE /api/policies/:id`
+
+Primary claim endpoints:
+
+- `GET /api/claims`
+- `POST /api/claims`
+- `GET /api/claims/:id`
+- `PUT /api/claims/:id`
+- `DELETE /api/claims/:id`
+- `POST /api/claims/:id/notes`
 
 ### Client
 ```bash
@@ -117,14 +125,16 @@ kubectl rollout status deployment/task-manager-api --context kind-task-manager
 
 - API health endpoint: `/health`
 - API dashboard endpoint: `/api/dashboard` (requires a Bearer token after login)
-- API tasks endpoint: `/api/tasks` (requires a Bearer token after login)
+- API policies endpoint: `/api/policies` (requires a Bearer token after login)
+- API claims endpoint: `/api/claims` (requires a Bearer token after login)
 - API summary endpoint: `/api/summary` (requires a Bearer token after login)
 
 ## REST Examples
 
-- `GET /api/tasks?search=buy` filters tasks by text search
-- `GET /api/tasks?category=Shopping` filters by category
-- `GET /api/tasks?completed=false` returns only open tasks
+- `GET /api/policies?status=active` filters policies by status
+- `GET /api/policies?type=auto` filters policies by type
+- `GET /api/claims?status=submitted` filters claims by status
+- `GET /api/claims?policy=<policyId>` filters claims by linked policy
 
 ## Notes
 

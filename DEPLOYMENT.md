@@ -1,6 +1,6 @@
 # Deployment Architecture Plan
 
-This task manager project should be built locally, tagged, and pushed to Amazon ECR before deployment. The recommended workflow is: build the Express API image and the React client image, run them locally with Docker Compose, then push versioned images such as `1.0.0` and `latest` to ECR. A CI pipeline can repeat the same build steps on every commit so the cluster always pulls a known image tag.
+This policy claims tracker project should be built locally, tagged, and pushed to Amazon ECR before deployment. The recommended workflow is: build the Express API image and the React client image, run them locally with Docker Compose, then push versioned images such as `1.0.0` and `latest` to ECR. A CI pipeline can repeat the same build steps on every commit so the cluster always pulls a known image tag.
 
 For runtime, I would choose EKS if the goal is a production-style managed Kubernetes deployment, because it provides declarative rollout control, pod rescheduling, and a path to autoscaling. I would choose EC2 with Docker Compose for a smaller learning or budget-focused deployment, because it is easier to understand and cheaper to operate at small scale. EC2 is simpler, but it requires more manual setup and does not give the same orchestration features as EKS.
 
