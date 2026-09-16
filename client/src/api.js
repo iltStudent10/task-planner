@@ -13,6 +13,8 @@ const readStoredSession = () => {
   }
 };
 
+const getStoredToken = () => readStoredSession()?.token || '';
+
 const saveStoredSession = (session) => {
   if (typeof window === 'undefined') {
     return;
@@ -40,6 +42,27 @@ const createAuthHeaders = (token, headers = {}, body) => {
   return nextHeaders;
 };
 
+const buildBearerToken = (token) => (token ? `Bearer ${token}` : '');
+
+const requireToken = (token) => {
+  if (!token) {
+    throw new Error('Authentication required');
+  }
+
+  return token;
+};
+
+const requestJson = async (url, { token, auth = false, ...options } = {}) => {
+  const headers = createAuthHeaders(auth ? requireToken(token) : token, options.headers, options.body);
+
+  const response = await fetch(url, {
+    ...options,
+    headers,
+  });
+
+  return response;
+};
+
 const parseJsonResponse = async (response) => {
   if (response.status === 204) {
     return null;
@@ -48,4 +71,4 @@ const parseJsonResponse = async (response) => {
   return response.json();
 };
 
-export { AUTH_STORAGE_KEY, createAuthHeaders, parseJsonResponse, readStoredSession, saveStoredSession };
+export { AUTH_STORAGE_KEY, buildBearerToken, createAuthHeaders, getStoredToken, parseJsonResponse, readStoredSession, requestJson, requireToken, saveStoredSession };

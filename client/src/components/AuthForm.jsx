@@ -1,4 +1,4 @@
-export default function AuthForm({ mode, form, submitting, onChange, onModeChange, onSubmit }) {
+export default function AuthForm({ mode, form, submitting, errors, onChange, onModeChange, onSubmit }) {
   return (
     <article className="panel auth-card">
       <div className="auth-card__intro">
@@ -32,7 +32,15 @@ export default function AuthForm({ mode, form, submitting, onChange, onModeChang
         {mode === 'register' ? (
           <label className="form-grid__wide">
             <span>Name</span>
-            <input name="name" value={form.name} onChange={onChange} placeholder="Avery Smith" autoComplete="name" required />
+            <input
+              name="name"
+              value={form.name}
+              onChange={onChange}
+              placeholder="Avery Smith"
+              autoComplete="name"
+              aria-invalid={Boolean(errors?.name)}
+            />
+            {errors?.name ? <span className="field-error">{errors.name}</span> : null}
           </label>
         ) : null}
 
@@ -45,8 +53,9 @@ export default function AuthForm({ mode, form, submitting, onChange, onModeChang
             onChange={onChange}
             placeholder="avery@example.com"
             autoComplete="email"
-            required
+            aria-invalid={Boolean(errors?.email)}
           />
+          {errors?.email ? <span className="field-error">{errors.email}</span> : null}
         </label>
 
         <label className="form-grid__wide">
@@ -58,8 +67,9 @@ export default function AuthForm({ mode, form, submitting, onChange, onModeChang
             onChange={onChange}
             placeholder="At least 8 characters"
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            required
+            aria-invalid={Boolean(errors?.password)}
           />
+          {errors?.password ? <span className="field-error">{errors.password}</span> : null}
         </label>
 
         <button className="button button--primary form-grid__wide" type="submit" disabled={submitting}>
