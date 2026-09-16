@@ -1,12 +1,10 @@
-export default function Hero({ summary, totalTasks, completedTasks, openTasks, user, onLogout }) {
+export default function Hero({ user, onLogout, badgeLabel = 'Policy Claims Tracker', title, description, metrics = [] }) {
   return (
     <header className="hero">
       <div>
-        <span className="badge">Task Manager</span>
-        <h1>{user?.name ? `Welcome, ${user.name}.` : 'Plan your day.'}</h1>
-        <p>
-          A simple, polished task manager for daily life. Track groceries, cooking, errands, and anything else you want to get done.
-        </p>
+        <span className="badge">{badgeLabel}</span>
+        <h1>{title || (user?.name ? `Welcome, ${user.name}.` : 'Policy Claims Tracker')}</h1>
+        <p>{description || 'Track policies, claims, and dashboard activity from one protected workspace.'}</p>
         {user ? (
           <div className="hero__account">
             <span>{user.email}</span>
@@ -16,18 +14,12 @@ export default function Hero({ summary, totalTasks, completedTasks, openTasks, u
       </div>
       <div className="hero__aside">
         <div className="hero-metrics">
-          <div>
-            <strong>{summary?.totalTasks ?? totalTasks}</strong>
-            <span>Total tasks</span>
-          </div>
-          <div>
-            <strong>{summary?.completedTasks ?? completedTasks}</strong>
-            <span>Done</span>
-          </div>
-          <div>
-            <strong>{summary?.openTasks ?? openTasks}</strong>
-            <span>Open</span>
-          </div>
+          {metrics.map((metric) => (
+            <div key={metric.label}>
+              <strong>{metric.value}</strong>
+              <span>{metric.label}</span>
+            </div>
+          ))}
         </div>
         {onLogout ? (
           <button className="button button--ghost" type="button" onClick={onLogout}>

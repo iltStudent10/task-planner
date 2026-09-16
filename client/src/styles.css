@@ -390,6 +390,10 @@ h2 {
   color: #9eb0d0;
 }
 
+.dashboard-card__header .badge {
+  align-self: start;
+}
+
 .dashboard-preview-list {
   display: grid;
   gap: 12px;

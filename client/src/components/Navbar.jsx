@@ -8,8 +8,8 @@ export default function Navbar() {
     <nav className="app-nav">
       <div className="app-nav__links">
         <Link to="/">Dashboard</Link>
-        <Link to="/tasks">Tasks</Link>
-        <Link to="/tasks/new">Create task</Link>
+        <Link to="/policies">Policies</Link>
+        <Link to="/claims">Claims</Link>
       </div>
 
       <div className="app-nav__actions">

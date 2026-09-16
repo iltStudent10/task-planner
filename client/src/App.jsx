@@ -1,22 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import Hero from './components/Hero';
 import AuthForm from './components/AuthForm';
-import TaskForm from './components/TaskForm';
-import TaskFilters from './components/TaskFilters';
-import TaskList from './components/TaskList';
 import ErrorAlert from './components/ErrorAlert';
-import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { parseJsonResponse, requestJson } from './api';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
+import { parseJsonResponse, requestJson } from './api';
 import { useAuth } from './context/AuthContext';
 
-const blankForm = {
-  title: '',
-  category: 'Personal',
-  priority: 'medium',
-  dueDate: '',
-  notes: '',
+const blankPolicyForm = {
+  policyNumber: '',
+  holderName: '',
+  type: 'auto',
+  premium: '',
+  status: 'active',
+  effectiveDate: '',
+  expirationDate: '',
+};
+
+const blankClaimForm = {
+  claimNumber: '',
+  policy: '',
+  incidentDate: '',
+  amount: '',
+  description: '',
+  status: 'submitted',
+  assignedTo: '',
+};
+
+const blankNoteForm = {
+  text: '',
 };
 
 const blankAuthForm = {
@@ -26,12 +39,25 @@ const blankAuthForm = {
   role: 'adjuster',
 };
 
-const blankFormErrors = {
-  title: '',
-  category: '',
-  priority: '',
-  dueDate: '',
-  notes: '',
+const blankPolicyErrors = {
+  policyNumber: '',
+  holderName: '',
+  type: '',
+  premium: '',
+  status: '',
+  effectiveDate: '',
+  expirationDate: '',
+};
+
+const blankClaimErrors = {
+  claimNumber: '',
+  policy: '',
+  incidentDate: '',
+  amount: '',
+  description: '',
+  status: '',
+  assignedTo: '',
+  text: '',
 };
 
 const blankAuthErrors = {
@@ -42,6 +68,7 @@ const blankAuthErrors = {
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const datePattern = /^\d{4}-\d{2}-\d{2}$/;
 
 const normalizeError = async (response, fallbackMessage) => {
   try {
@@ -52,31 +79,85 @@ const normalizeError = async (response, fallbackMessage) => {
   }
 };
 
-const validateTaskForm = (value) => {
-  const errors = { ...blankFormErrors };
+const hasErrors = (errors) => Object.values(errors).some(Boolean);
 
-  if (!String(value.title || '').trim()) {
-    errors.title = 'Task title is required.';
-  } else if (String(value.title).trim().length < 3) {
-    errors.title = 'Task title must be at least 3 characters.';
-  } else if (String(value.title).trim().length > 80) {
-    errors.title = 'Task title must be 80 characters or fewer.';
+const validatePolicyForm = (value) => {
+  const errors = { ...blankPolicyErrors };
+
+  if (!String(value.policyNumber || '').trim()) {
+    errors.policyNumber = 'Policy number is required.';
   }
 
-  if (value.category && String(value.category).trim().length > 40) {
-    errors.category = 'Category must be 40 characters or fewer.';
+  if (!String(value.holderName || '').trim()) {
+    errors.holderName = 'Holder name is required.';
   }
 
-  if (!['low', 'medium', 'high'].includes(value.priority)) {
-    errors.priority = 'Choose a valid priority.';
+  if (!['auto', 'home', 'life'].includes(String(value.type || ''))) {
+    errors.type = 'Choose a valid policy type.';
   }
 
-  if (value.dueDate && String(value.dueDate).trim().length > 40) {
-    errors.dueDate = 'Due date must be 40 characters or fewer.';
+  if (value.premium === '' || Number.isNaN(Number(value.premium)) || Number(value.premium) < 0) {
+    errors.premium = 'Premium must be a valid non-negative number.';
   }
 
-  if (value.notes && String(value.notes).trim().length > 300) {
-    errors.notes = 'Notes must be 300 characters or fewer.';
+  if (!['active', 'expired', 'cancelled'].includes(String(value.status || ''))) {
+    errors.status = 'Choose a valid status.';
+  }
+
+  if (value.effectiveDate && !datePattern.test(String(value.effectiveDate))) {
+    errors.effectiveDate = 'Effective date must be a valid date.';
+  }
+
+  if (value.expirationDate && !datePattern.test(String(value.expirationDate))) {
+    errors.expirationDate = 'Expiration date must be a valid date.';
+  }
+
+  if (value.effectiveDate && value.expirationDate && value.expirationDate < value.effectiveDate) {
+    errors.expirationDate = 'Expiration date cannot be before the effective date.';
+  }
+
+  return errors;
+};
+
+const validateClaimForm = (value) => {
+  const errors = { ...blankClaimErrors };
+
+  if (!String(value.claimNumber || '').trim()) {
+    errors.claimNumber = 'Claim number is required.';
+  }
+
+  if (!String(value.policy || '').trim()) {
+    errors.policy = 'Choose a linked policy.';
+  }
+
+  if (!datePattern.test(String(value.incidentDate || ''))) {
+    errors.incidentDate = 'Incident date is required.';
+  }
+
+  if (value.amount === '' || Number.isNaN(Number(value.amount)) || Number(value.amount) < 0) {
+    errors.amount = 'Amount must be a valid non-negative number.';
+  }
+
+  if (!String(value.description || '').trim()) {
+    errors.description = 'Description is required.';
+  }
+
+  if (!['submitted', 'under-review', 'approved', 'denied', 'closed'].includes(String(value.status || ''))) {
+    errors.status = 'Choose a valid claim status.';
+  }
+
+  if (value.assignedTo && String(value.assignedTo).trim().length > 80) {
+    errors.assignedTo = 'Assigned to must be 80 characters or fewer.';
+  }
+
+  return errors;
+};
+
+const validateNoteForm = (value) => {
+  const errors = { ...blankClaimErrors };
+
+  if (!String(value.text || '').trim()) {
+    errors.text = 'Note text is required.';
   }
 
   return errors;
@@ -114,35 +195,42 @@ const validateAuthForm = (mode, value) => {
   return errors;
 };
 
-const hasErrors = (errors) => Object.values(errors).some(Boolean);
-
 export default function App() {
   const { user, token, login, logout, isBootstrapping } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const authMode = location.pathname === '/register' ? 'register' : 'login';
+
   const [summary, setSummary] = useState(null);
-  const [tasks, setTasks] = useState([]);
-  const [form, setForm] = useState(blankForm);
+  const [policies, setPolicies] = useState([]);
+  const [claims, setClaims] = useState([]);
+  const [policyForm, setPolicyForm] = useState(blankPolicyForm);
+  const [claimForm, setClaimForm] = useState(blankClaimForm);
+  const [noteForm, setNoteForm] = useState(blankNoteForm);
   const [authForm, setAuthForm] = useState(blankAuthForm);
-  const [filter, setFilter] = useState('all');
-  const [search, setSearch] = useState('');
   const [error, setError] = useState('');
-  const [taskErrors, setTaskErrors] = useState(blankFormErrors);
+  const [policyErrors, setPolicyErrors] = useState(blankPolicyErrors);
+  const [claimErrors, setClaimErrors] = useState(blankClaimErrors);
   const [authErrors, setAuthErrors] = useState(blankAuthErrors);
-  const [saving, setSaving] = useState(false);
+  const [policySaving, setPolicySaving] = useState(false);
+  const [claimSaving, setClaimSaving] = useState(false);
+  const [noteSaving, setNoteSaving] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
-  const [taskDetail, setTaskDetail] = useState(null);
-  const [taskDetailLoading, setTaskDetailLoading] = useState(false);
-  const [taskDetailError, setTaskDetailError] = useState('');
+  const [claimDetail, setClaimDetail] = useState(null);
+  const [claimDetailLoading, setClaimDetailLoading] = useState(false);
+  const [claimDetailError, setClaimDetailError] = useState('');
 
   const clearSession = (message = '') => {
     setSummary(null);
-    setTasks([]);
-    setTaskDetail(null);
-    setTaskDetailError('');
-    setForm(blankForm);
-    setTaskErrors(blankFormErrors);
+    setPolicies([]);
+    setClaims([]);
+    setClaimDetail(null);
+    setClaimDetailError('');
+    setPolicyForm(blankPolicyForm);
+    setClaimForm(blankClaimForm);
+    setNoteForm(blankNoteForm);
+    setPolicyErrors(blankPolicyErrors);
+    setClaimErrors(blankClaimErrors);
     setAuthErrors(blankAuthErrors);
     logout();
     if (message) {
@@ -150,8 +238,8 @@ export default function App() {
     }
   };
 
-  const authFetch = async (url, options = {}, token) => {
-    const response = await requestJson(url, { ...options, token, auth: true });
+  const authFetch = async (url, options = {}, authToken = token) => {
+    const response = await requestJson(url, { ...options, token: authToken, auth: true });
 
     if (response.status === 401) {
       clearSession('Your session expired. Please log in again.');
@@ -165,23 +253,27 @@ export default function App() {
     try {
       if (!authToken) {
         setSummary(null);
-        setTasks([]);
+        setPolicies([]);
+        setClaims([]);
         return;
       }
 
-      const [summaryRes, tasksRes] = await Promise.all([
+      const [summaryRes, policiesRes, claimsRes] = await Promise.all([
         authFetch('/api/dashboard', {}, authToken),
-        authFetch('/api/tasks', {}, authToken),
+        authFetch('/api/policies', {}, authToken),
+        authFetch('/api/claims', {}, authToken),
       ]);
 
-      if (!summaryRes.ok || !tasksRes.ok) {
+      if (!summaryRes.ok || !policiesRes.ok || !claimsRes.ok) {
         throw new Error('API request failed');
       }
 
       const summaryJson = await parseJsonResponse(summaryRes);
-      const tasksJson = await parseJsonResponse(tasksRes);
+      const policiesJson = await parseJsonResponse(policiesRes);
+      const claimsJson = await parseJsonResponse(claimsRes);
       setSummary(summaryJson);
-      setTasks(tasksJson.tasks || []);
+      setPolicies(policiesJson.policies || []);
+      setClaims(claimsJson.claims || []);
     } catch (err) {
       if (err.message !== 'Authentication required') {
         setError(err.message || 'Unable to load dashboard data');
@@ -195,10 +287,22 @@ export default function App() {
     }
   }, [token]);
 
-  const handleChange = (event) => {
+  const handlePolicyChange = (event) => {
     const { name, value } = event.target;
-    setForm((current) => ({ ...current, [name]: value }));
-    setTaskErrors((current) => ({ ...current, [name]: '' }));
+    setPolicyForm((current) => ({ ...current, [name]: value }));
+    setPolicyErrors((current) => ({ ...current, [name]: '' }));
+  };
+
+  const handleClaimChange = (event) => {
+    const { name, value } = event.target;
+    setClaimForm((current) => ({ ...current, [name]: value }));
+    setClaimErrors((current) => ({ ...current, [name]: '' }));
+  };
+
+  const handleNoteChange = (event) => {
+    const { name, value } = event.target;
+    setNoteForm((current) => ({ ...current, [name]: value }));
+    setClaimErrors((current) => ({ ...current, [name]: '' }));
   };
 
   const handleAuthChange = (event) => {
@@ -229,10 +333,9 @@ export default function App() {
 
     try {
       const endpoint = authMode === 'register' ? '/api/auth/register' : '/api/auth/login';
-      const payload =
-        authMode === 'register'
-          ? { name: authForm.name, email: authForm.email, password: authForm.password, role: authForm.role }
-          : { email: authForm.email, password: authForm.password };
+      const payload = authMode === 'register'
+        ? { name: authForm.name, email: authForm.email, password: authForm.password, role: authForm.role }
+        : { email: authForm.email, password: authForm.password };
 
       const response = await requestJson(endpoint, {
         method: 'POST',
@@ -255,116 +358,151 @@ export default function App() {
     }
   };
 
-  const createTask = async (event) => {
+  const createPolicy = async (event) => {
     event.preventDefault();
-    const nextErrors = validateTaskForm(form);
-    setTaskErrors(nextErrors);
+    const nextErrors = validatePolicyForm(policyForm);
+    setPolicyErrors(nextErrors);
 
     if (hasErrors(nextErrors)) {
-      setError('Please fix the highlighted task fields.');
-      return;
+      setError('Please fix the highlighted policy fields.');
+      return null;
     }
 
-    setSaving(true);
+    setPolicySaving(true);
     setError('');
 
     try {
-      const res = await authFetch('/api/tasks', {
+      const response = await authFetch('/api/policies', {
         method: 'POST',
-        body: JSON.stringify(form),
-      }, token);
+        body: JSON.stringify({ ...policyForm, premium: Number(policyForm.premium) }),
+      });
 
-      if (!res.ok) {
-        throw new Error(await normalizeError(res, 'Unable to create task'));
+      if (!response.ok) {
+        throw new Error(await normalizeError(response, 'Unable to create policy'));
       }
 
-      const body = await parseJsonResponse(res);
-      setForm(blankForm);
-      setTaskErrors(blankFormErrors);
+      const body = await parseJsonResponse(response);
+      setPolicyForm(blankPolicyForm);
+      setPolicyErrors(blankPolicyErrors);
       await loadData(token);
-      return body.task || null;
+      return body.policy || null;
     } catch (err) {
-      setError(err.message || 'Unable to create task');
+      setError(err.message || 'Unable to create policy');
       return null;
     } finally {
-      setSaving(false);
+      setPolicySaving(false);
     }
   };
 
-  const toggleComplete = async (task) => {
+  const createClaim = async (event) => {
+    event.preventDefault();
+    const nextErrors = validateClaimForm(claimForm);
+    setClaimErrors(nextErrors);
+
+    if (hasErrors(nextErrors)) {
+      setError('Please fix the highlighted claim fields.');
+      return null;
+    }
+
+    setClaimSaving(true);
+    setError('');
+
     try {
-        await authFetch(
-        `/api/tasks/${task.id}`,
-        {
-          method: 'PATCH',
-          body: JSON.stringify({ completed: !task.completed }),
-        },
-          token,
-      );
-      await loadData(token);
-    } catch (err) {
-      if (err.message !== 'Authentication required') {
-        setError(err.message || 'Unable to update task');
+      const response = await authFetch('/api/claims', {
+        method: 'POST',
+        body: JSON.stringify({ ...claimForm, amount: Number(claimForm.amount) }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await normalizeError(response, 'Unable to create claim'));
       }
+
+      const body = await parseJsonResponse(response);
+      setClaimForm((current) => ({ ...blankClaimForm, policy: current.policy }));
+      setClaimErrors(blankClaimErrors);
+      await loadData(token);
+      return body.claim || null;
+    } catch (err) {
+      setError(err.message || 'Unable to create claim');
+      return null;
+    } finally {
+      setClaimSaving(false);
     }
   };
 
-  const deleteTask = async (taskId) => {
-    try {
-      await authFetch(`/api/tasks/${taskId}`, { method: 'DELETE' }, token);
-      await loadData(token);
-      return true;
-    } catch (err) {
-      if (err.message !== 'Authentication required') {
-        setError(err.message || 'Unable to delete task');
-      }
-      return false;
-    }
-  };
-
-  const filteredTasks = tasks.filter((task) => {
-    const searchHit = [task.title, task.category, task.notes, task.dueDate].join(' ').toLowerCase().includes(search.toLowerCase());
-    const statusHit = filter === 'all' || (filter === 'completed' ? task.completed : !task.completed);
-    return searchHit && statusHit;
-  });
-
-  const completedCount = tasks.filter((task) => task.completed).length;
-  const openCount = tasks.length - completedCount;
-  const upcomingTasks = tasks
-    .filter((task) => !task.completed && task.dueDate)
-    .sort((left, right) => new Date(left.dueDate).getTime() - new Date(right.dueDate).getTime())
-    .slice(0, 3);
-  const highPriorityOpenTasks = tasks
-    .filter((task) => !task.completed && task.priority === 'high')
-    .slice(0, 3);
-  const recentCompletedTasks = tasks
-    .filter((task) => task.completed)
-    .slice(0, 3);
-
-  const loadTaskDetail = async (taskId) => {
+  const loadClaimDetail = async (claimId) => {
     if (!token) {
       return null;
     }
 
-    setTaskDetailLoading(true);
-    setTaskDetailError('');
+    setClaimDetailLoading(true);
+    setClaimDetailError('');
 
     try {
-      const response = await authFetch(`/api/tasks/${taskId}`, {}, token);
+      const response = await authFetch(`/api/claims/${claimId}`);
       if (!response.ok) {
-        throw new Error('Unable to load task');
+        throw new Error('Unable to load claim');
       }
 
       const body = await parseJsonResponse(response);
-      setTaskDetail(body.task || null);
-      return body.task || null;
+      setClaimDetail(body.claim || null);
+      return body.claim || null;
     } catch (err) {
-      setTaskDetailError(err.message || 'Unable to load task');
+      setClaimDetailError(err.message || 'Unable to load claim');
       return null;
     } finally {
-      setTaskDetailLoading(false);
+      setClaimDetailLoading(false);
     }
   };
+
+  const addClaimNote = async (claimId) => {
+    const nextErrors = validateNoteForm(noteForm);
+    setClaimErrors((current) => ({ ...current, text: nextErrors.text }));
+
+    if (nextErrors.text) {
+      setError('Please enter a note before submitting.');
+      return false;
+    }
+
+    setNoteSaving(true);
+    setError('');
+
+    try {
+      const response = await authFetch(`/api/claims/${claimId}/notes`, {
+        method: 'POST',
+        body: JSON.stringify({ text: noteForm.text }),
+      });
+
+      if (!response.ok) {
+        throw new Error(await normalizeError(response, 'Unable to add note'));
+      }
+
+      const body = await parseJsonResponse(response);
+      setClaimDetail(body.claim || null);
+      setNoteForm(blankNoteForm);
+      await loadData(token);
+      return true;
+    } catch (err) {
+      setError(err.message || 'Unable to add note');
+      return false;
+    } finally {
+      setNoteSaving(false);
+    }
+  };
+
+  const policyLookup = useMemo(
+    () => Object.fromEntries(policies.map((policy) => [policy.id, policy])),
+    [policies],
+  );
+
+  const recentPolicies = policies.slice(0, 3);
+  const recentClaims = claims.slice(0, 4);
+  const dashboardMetrics = [
+    { label: 'Policies', value: summary?.totalPolicies ?? policies.length },
+    { label: 'Claims', value: summary?.totalClaims ?? claims.length },
+    { label: 'Active policies', value: summary?.policyStatuses?.active ?? policies.filter((policy) => policy.status === 'active').length },
+    { label: 'Under review', value: summary?.claimStatuses?.underReview ?? claims.filter((claim) => claim.status === 'under-review').length },
+  ];
 
   const renderProtectedFrame = (children) => (
     <div className="page">
@@ -376,13 +514,13 @@ export default function App() {
   const renderAuthScreen = (mode) => {
     const title = mode === 'login' ? 'Welcome back' : 'Create your account';
     const message = mode === 'login'
-      ? 'Log in to access your dashboard and tasks.'
-      : 'Register to create your account and start tracking your work.';
+      ? 'Log in to access your dashboard, policies, and claims.'
+      : 'Register to create your account and start tracking policies and claims.';
 
     return (
       <div className="page auth-page">
         <section className="auth-hero">
-          <span className="badge">Task Manager</span>
+          <span className="badge">Policy Claims Tracker</span>
           <h1>{title}</h1>
           <p>{message}</p>
         </section>
@@ -402,128 +540,315 @@ export default function App() {
     );
   };
 
-  const renderTasksScreen = () => renderProtectedFrame(
+  const renderPoliciesScreen = () => renderProtectedFrame(
     <>
       <header className="section-header">
         <div>
-          <span className="badge">Tasks</span>
-          <h1>Tasks</h1>
+          <span className="badge">Policies</span>
+          <h1>Policies</h1>
         </div>
         <div className="section-header__actions">
-          <Link className="button" to="/tasks/new">
-            Create task
-          </Link>
-        </div>
-      </header>
-
-      <section className="grid">
-        <TaskFilters search={search} filter={filter} onSearchChange={setSearch} onFilterChange={setFilter} />
-
-        <TaskList tasks={filteredTasks} onToggleComplete={toggleComplete} onDelete={deleteTask} />
-      </section>
-    </>,
-  );
-
-  const renderCreateTaskScreen = () => renderProtectedFrame(
-    <>
-      <header className="section-header">
-        <div>
-          <span className="badge">Create task</span>
-          <h1>New task</h1>
-        </div>
-        <div className="section-header__actions">
-          <Link className="button button--soft" to="/tasks">
-            Back to tasks
+          <Link className="button button--soft" to="/claims">
+            Go to claims
           </Link>
         </div>
       </header>
 
       <ErrorAlert message={error} />
 
-      <TaskForm
-        form={form}
-        saving={saving}
-        errors={taskErrors}
-        onChange={handleChange}
-        onSubmit={async (event) => {
-          const createdTask = await createTask(event);
-          if (createdTask?.id) {
-            navigate(`/tasks/${createdTask.id}`);
-          }
-        }}
-        title="Create a task"
-        submitLabel="Create task"
-      />
-    </>,
+      <section className="grid">
+        <article className="panel">
+          <h2>Create policy</h2>
+          <form className="form-grid" onSubmit={createPolicy}>
+            <label>
+              <span>Policy number</span>
+              <input name="policyNumber" value={policyForm.policyNumber} onChange={handlePolicyChange} aria-invalid={Boolean(policyErrors.policyNumber)} />
+              {policyErrors.policyNumber ? <span className="field-error">{policyErrors.policyNumber}</span> : null}
+            </label>
+            <label>
+              <span>Holder name</span>
+              <input name="holderName" value={policyForm.holderName} onChange={handlePolicyChange} aria-invalid={Boolean(policyErrors.holderName)} />
+              {policyErrors.holderName ? <span className="field-error">{policyErrors.holderName}</span> : null}
+            </label>
+            <label>
+              <span>Policy type</span>
+              <select name="type" value={policyForm.type} onChange={handlePolicyChange} aria-invalid={Boolean(policyErrors.type)}>
+                <option value="auto">Auto</option>
+                <option value="home">Home</option>
+                <option value="life">Life</option>
+              </select>
+              {policyErrors.type ? <span className="field-error">{policyErrors.type}</span> : null}
+            </label>
+            <label>
+              <span>Premium</span>
+              <input name="premium" type="number" min="0" step="0.01" value={policyForm.premium} onChange={handlePolicyChange} aria-invalid={Boolean(policyErrors.premium)} />
+              {policyErrors.premium ? <span className="field-error">{policyErrors.premium}</span> : null}
+            </label>
+            <label>
+              <span>Status</span>
+              <select name="status" value={policyForm.status} onChange={handlePolicyChange} aria-invalid={Boolean(policyErrors.status)}>
+                <option value="active">Active</option>
+                <option value="expired">Expired</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+              {policyErrors.status ? <span className="field-error">{policyErrors.status}</span> : null}
+            </label>
+            <label>
+              <span>Effective date</span>
+              <input name="effectiveDate" type="date" value={policyForm.effectiveDate} onChange={handlePolicyChange} aria-invalid={Boolean(policyErrors.effectiveDate)} />
+              {policyErrors.effectiveDate ? <span className="field-error">{policyErrors.effectiveDate}</span> : null}
+            </label>
+            <label className="form-grid__wide">
+              <span>Expiration date</span>
+              <input name="expirationDate" type="date" value={policyForm.expirationDate} onChange={handlePolicyChange} aria-invalid={Boolean(policyErrors.expirationDate)} />
+              {policyErrors.expirationDate ? <span className="field-error">{policyErrors.expirationDate}</span> : null}
+            </label>
+            <button className="button form-grid__wide" type="submit" disabled={policySaving}>
+              {policySaving ? 'Saving...' : 'Create policy'}
+            </button>
+          </form>
+        </article>
+
+        <article className="panel">
+          <h2>All policies</h2>
+          <div className="cards cards--stacked">
+            {policies.map((policy) => (
+              <article key={policy.id} className="card">
+                <h3>{policy.policyNumber}</h3>
+                <p>{policy.holderName}</p>
+                <div className="task-meta">
+                  <span>{policy.type}</span>
+                  <span>{policy.status}</span>
+                  <span>${Number(policy.premium || 0).toFixed(2)}</span>
+                  <span>{policy.effectiveDate || 'No effective date'}</span>
+                </div>
+              </article>
+            ))}
+            {!policies.length ? <div className="empty">No policies available yet.</div> : null}
+          </div>
+        </article>
+      </section>
+    </>
   );
 
-  const TaskDetailScreen = () => {
+  const renderClaimsScreen = () => renderProtectedFrame(
+    <>
+      <header className="section-header">
+        <div>
+          <span className="badge">Claims</span>
+          <h1>Claims</h1>
+        </div>
+        <div className="section-header__actions">
+          <Link className="button button--soft" to="/policies">
+            Go to policies
+          </Link>
+        </div>
+      </header>
+
+      <ErrorAlert message={error} />
+
+      <section className="grid">
+        <article className="panel">
+          <h2>Create claim</h2>
+          {!policies.length ? <div className="empty">Create a policy first so the claim can link to it.</div> : null}
+          <form
+            className="form-grid"
+            onSubmit={async (event) => {
+              const createdClaim = await createClaim(event);
+              if (createdClaim?.id) {
+                navigate(`/claims/${createdClaim.id}`);
+              }
+            }}
+          >
+            <label>
+              <span>Claim number</span>
+              <input name="claimNumber" value={claimForm.claimNumber} onChange={handleClaimChange} aria-invalid={Boolean(claimErrors.claimNumber)} />
+              {claimErrors.claimNumber ? <span className="field-error">{claimErrors.claimNumber}</span> : null}
+            </label>
+            <label>
+              <span>Linked policy</span>
+              <select name="policy" value={claimForm.policy} onChange={handleClaimChange} aria-invalid={Boolean(claimErrors.policy)} disabled={!policies.length}>
+                <option value="">Select a policy</option>
+                {policies.map((policy) => (
+                  <option key={policy.id} value={policy.id}>{policy.policyNumber} — {policy.holderName}</option>
+                ))}
+              </select>
+              {claimErrors.policy ? <span className="field-error">{claimErrors.policy}</span> : null}
+            </label>
+            <label>
+              <span>Incident date</span>
+              <input name="incidentDate" type="date" value={claimForm.incidentDate} onChange={handleClaimChange} aria-invalid={Boolean(claimErrors.incidentDate)} />
+              {claimErrors.incidentDate ? <span className="field-error">{claimErrors.incidentDate}</span> : null}
+            </label>
+            <label>
+              <span>Amount</span>
+              <input name="amount" type="number" min="0" step="0.01" value={claimForm.amount} onChange={handleClaimChange} aria-invalid={Boolean(claimErrors.amount)} />
+              {claimErrors.amount ? <span className="field-error">{claimErrors.amount}</span> : null}
+            </label>
+            <label>
+              <span>Status</span>
+              <select name="status" value={claimForm.status} onChange={handleClaimChange} aria-invalid={Boolean(claimErrors.status)}>
+                <option value="submitted">Submitted</option>
+                <option value="under-review">Under review</option>
+                <option value="approved">Approved</option>
+                <option value="denied">Denied</option>
+                <option value="closed">Closed</option>
+              </select>
+              {claimErrors.status ? <span className="field-error">{claimErrors.status}</span> : null}
+            </label>
+            <label>
+              <span>Assigned to</span>
+              <input name="assignedTo" value={claimForm.assignedTo} onChange={handleClaimChange} aria-invalid={Boolean(claimErrors.assignedTo)} />
+              {claimErrors.assignedTo ? <span className="field-error">{claimErrors.assignedTo}</span> : null}
+            </label>
+            <label className="form-grid__wide">
+              <span>Description</span>
+              <textarea name="description" rows="4" value={claimForm.description} onChange={handleClaimChange} aria-invalid={Boolean(claimErrors.description)} />
+              {claimErrors.description ? <span className="field-error">{claimErrors.description}</span> : null}
+            </label>
+            <button className="button form-grid__wide" type="submit" disabled={claimSaving || !policies.length}>
+              {claimSaving ? 'Saving...' : 'Create claim'}
+            </button>
+          </form>
+        </article>
+
+        <article className="panel">
+          <h2>All claims</h2>
+          <div className="cards cards--stacked">
+            {claims.map((claim) => (
+              <Link key={claim.id} to={`/claims/${claim.id}`} className="card card--link">
+                <h3>{claim.claimNumber}</h3>
+                <p>{claim.description}</p>
+                <div className="task-meta">
+                  <span>{claim.status}</span>
+                  <span>{policyLookup[claim.policy]?.policyNumber || claim.policy}</span>
+                  <span>${Number(claim.amount || 0).toFixed(2)}</span>
+                  <span>{claim.incidentDate}</span>
+                </div>
+              </Link>
+            ))}
+            {!claims.length ? <div className="empty">No claims available yet.</div> : null}
+          </div>
+        </article>
+      </section>
+    </>
+  );
+
+  const ClaimDetailScreen = () => {
     const { id } = useParams();
-    const [localTask, setLocalTask] = useState(null);
+    const [localClaim, setLocalClaim] = useState(null);
 
     useEffect(() => {
-      const found = tasks.find((task) => task.id === id);
-      if (found) {
-        setLocalTask(found);
-        setTaskDetail(found);
-        return;
-      }
+      loadClaimDetail(id).then((loaded) => setLocalClaim(loaded));
+    }, [id]);
 
-      loadTaskDetail(id).then((loaded) => setLocalTask(loaded));
-    }, [id, tasks]);
+    const claim = localClaim || claimDetail;
+    const linkedPolicy = claim ? policyLookup[claim.policy] : null;
 
-    const task = localTask || taskDetail;
+    return renderProtectedFrame(
+      <>
+        <header className="section-header">
+          <div>
+            <span className="badge">Claim detail</span>
+            <h1>{claim?.claimNumber || 'Claim'}</h1>
+          </div>
+          <div className="section-header__actions">
+            <Link className="button button--soft" to="/claims">
+              Back to claims
+            </Link>
+          </div>
+        </header>
 
-    const handleDeleteFromDetail = async () => {
-      const removed = await deleteTask(id);
-      if (removed) {
-        navigate('/tasks');
-      }
-    };
+        {claimDetailLoading ? <div className="loading-card">Loading claim...</div> : null}
+        {claimDetailError ? <ErrorAlert message={claimDetailError} /> : null}
 
-    return (
-      renderProtectedFrame(
-        <>
-          <header className="section-header">
-            <div>
-              <span className="badge">Task detail</span>
-              <h1>{task?.title || 'Task'}</h1>
-            </div>
-          </header>
-
-          {taskDetailLoading ? <div className="loading-card">Loading task...</div> : null}
-          {taskDetailError ? <ErrorAlert message={taskDetailError} /> : null}
-
-          {task ? (
-            <article className="panel panel--wide">
-              <h2>Details</h2>
-              <div className="cards cards--stacked">
-                <article className="card">
-                  <h3>{task.title}</h3>
-                  <p>{task.notes || 'No notes provided.'}</p>
-                  <div className="task-meta">
-                    <span>{task.completed ? 'Completed' : 'Open'}</span>
-                    <span>{task.category || 'General'}</span>
-                    <span>{task.priority}</span>
-                    <span>{task.dueDate || 'No due date'}</span>
-                  </div>
-                </article>
-                <article className="card">
-                  <h3>Actions</h3>
-                  <div className="task-detail__actions">
-                    <button className="button" type="button" onClick={() => toggleComplete(task)}>
-                      {task.completed ? 'Mark open' : 'Mark complete'}
-                    </button>
-                    <button className="button button--ghost" type="button" onClick={handleDeleteFromDetail}>
-                      Delete task
-                    </button>
-                  </div>
-                </article>
+        {claim ? (
+          <section className="cards">
+            <article className="card dashboard-card">
+              <div className="dashboard-card__header">
+                <div>
+                  <h2>Claim summary</h2>
+                  <p>Protected detail fetched from the claims API.</p>
+                </div>
+                <span className="badge">{claim.status}</span>
+              </div>
+              <div className="dashboard-preview-item">
+                <strong>{claim.claimNumber}</strong>
+                <p>{claim.description}</p>
+                <div className="task-meta">
+                  <span>{claim.incidentDate}</span>
+                  <span>${Number(claim.amount || 0).toFixed(2)}</span>
+                  <span>{claim.assignedTo || 'Unassigned'}</span>
+                </div>
               </div>
             </article>
-          ) : null}
-        </>,
-      )
+
+            <article className="card dashboard-card">
+              <div className="dashboard-card__header">
+                <div>
+                  <h2>Linked policy</h2>
+                  <p>The policy relationship for this claim.</p>
+                </div>
+              </div>
+              {linkedPolicy ? (
+                <div className="dashboard-preview-item">
+                  <strong>{linkedPolicy.policyNumber}</strong>
+                  <p>{linkedPolicy.holderName}</p>
+                  <div className="task-meta">
+                    <span>{linkedPolicy.type}</span>
+                    <span>{linkedPolicy.status}</span>
+                    <span>${Number(linkedPolicy.premium || 0).toFixed(2)}</span>
+                  </div>
+                </div>
+              ) : (
+                <div className="empty">Linked policy details are unavailable.</div>
+              )}
+            </article>
+
+            <article className="card dashboard-card dashboard-card--wide">
+              <div className="dashboard-card__header">
+                <div>
+                  <h2>Claim notes</h2>
+                  <p>Add a note to demonstrate the protected notes endpoint.</p>
+                </div>
+                <span className="badge">{Array.isArray(claim.notes) ? claim.notes.length : 0}</span>
+              </div>
+              <div className="dashboard-preview-list">
+                {(claim.notes || []).map((note, index) => (
+                  <div key={`${note.createdAt || index}-${index}`} className="dashboard-preview-item">
+                    <strong>{note.author || 'System'}</strong>
+                    <p>{note.text}</p>
+                    <div className="task-meta">
+                      <span>{note.createdAt || 'No timestamp'}</span>
+                    </div>
+                  </div>
+                ))}
+                {!claim.notes?.length ? <div className="empty">No notes added yet.</div> : null}
+              </div>
+              <form
+                className="form-grid"
+                onSubmit={async (event) => {
+                  event.preventDefault();
+                  const saved = await addClaimNote(id);
+                  if (saved) {
+                    const refreshed = await loadClaimDetail(id);
+                    setLocalClaim(refreshed);
+                  }
+                }}
+              >
+                <label className="form-grid__wide">
+                  <span>New note</span>
+                  <textarea name="text" rows="3" value={noteForm.text} onChange={handleNoteChange} aria-invalid={Boolean(claimErrors.text)} />
+                  {claimErrors.text ? <span className="field-error">{claimErrors.text}</span> : null}
+                </label>
+                <button className="button form-grid__wide" type="submit" disabled={noteSaving}>
+                  {noteSaving ? 'Saving...' : 'Add note'}
+                </button>
+              </form>
+            </article>
+          </section>
+        ) : null}
+      </>
     );
   };
 
@@ -531,11 +856,11 @@ export default function App() {
     <div className="page">
       <Navbar />
       <Hero
-        summary={summary}
-        totalTasks={tasks.length}
-        completedTasks={completedCount}
-        openTasks={openCount}
         user={user}
+        badgeLabel="Policy Claims Tracker"
+        title={user?.name ? `Welcome, ${user.name}.` : 'Policy Claims Tracker'}
+        description="Use the protected dashboard to monitor policies, claims, and API-backed insurance activity."
+        metrics={dashboardMetrics}
       />
 
       <ErrorAlert message={error} />
@@ -543,14 +868,14 @@ export default function App() {
       <header className="section-header">
         <div>
           <span className="badge">Overview</span>
-          <h1>Your tasks</h1>
+          <h1>Dashboard</h1>
         </div>
         <div className="section-header__actions">
-          <Link className="button" to="/tasks/new">
-            Create task
+          <Link className="button" to="/policies">
+            Manage policies
           </Link>
-          <Link className="button button--soft" to="/tasks">
-            View all tasks
+          <Link className="button button--soft" to="/claims">
+            Manage claims
           </Link>
         </div>
       </header>
@@ -559,75 +884,64 @@ export default function App() {
         <article className="card dashboard-card">
           <div className="dashboard-card__header">
             <div>
-              <h2>Upcoming</h2>
-              <p>Open tasks with the closest due dates.</p>
+              <h2>Recent policies</h2>
+              <p>Use these records during the live walkthrough.</p>
             </div>
-            <span className="badge">{upcomingTasks.length}</span>
+            <span className="badge">{recentPolicies.length}</span>
           </div>
           <div className="dashboard-preview-list">
-            {upcomingTasks.map((task) => (
-              <Link key={task.id} to={`/tasks/${task.id}`} className="dashboard-preview-item">
-                <strong>{task.title}</strong>
+            {recentPolicies.map((policy) => (
+              <div key={policy.id} className="dashboard-preview-item">
+                <strong>{policy.policyNumber}</strong>
+                <p>{policy.holderName}</p>
                 <div className="task-meta">
-                  <span>{task.dueDate}</span>
-                  <span>{task.priority}</span>
+                  <span>{policy.type}</span>
+                  <span>{policy.status}</span>
+                  <span>${Number(policy.premium || 0).toFixed(2)}</span>
                 </div>
-              </Link>
+              </div>
             ))}
-            {!upcomingTasks.length ? <div className="empty">No upcoming due dates.</div> : null}
+            {!recentPolicies.length ? <div className="empty">No policies available.</div> : null}
           </div>
         </article>
 
         <article className="card dashboard-card">
           <div className="dashboard-card__header">
             <div>
-              <h2>High priority</h2>
-              <p>The tasks that need attention first.</p>
+              <h2>Recent claims</h2>
+              <p>Open one to show detail and protected request flow.</p>
             </div>
-            <span className="badge">{highPriorityOpenTasks.length}</span>
+            <span className="badge">{recentClaims.length}</span>
           </div>
           <div className="dashboard-preview-list">
-            {highPriorityOpenTasks.map((task) => (
-              <div key={task.id} className="dashboard-preview-item">
-                <strong>{task.title}</strong>
+            {recentClaims.map((claim) => (
+              <Link key={claim.id} to={`/claims/${claim.id}`} className="dashboard-preview-item">
+                <strong>{claim.claimNumber}</strong>
+                <p>{claim.description}</p>
                 <div className="task-meta">
-                  <span>{task.category || 'General'}</span>
-                  <span>{task.dueDate || 'No due date'}</span>
+                  <span>{claim.status}</span>
+                  <span>{policyLookup[claim.policy]?.policyNumber || claim.policy}</span>
+                  <span>${Number(claim.amount || 0).toFixed(2)}</span>
                 </div>
-                <div className="task-detail__actions">
-                  <button className="button button--soft" type="button" onClick={() => toggleComplete(task)}>
-                    Mark complete
-                  </button>
-                  <Link className="button button--ghost" to={`/tasks/${task.id}`}>
-                    Open
-                  </Link>
-                </div>
-              </div>
+              </Link>
             ))}
-            {!highPriorityOpenTasks.length ? <div className="empty">No high-priority open tasks.</div> : null}
+            {!recentClaims.length ? <div className="empty">No claims available.</div> : null}
           </div>
         </article>
 
         <article className="card dashboard-card dashboard-card--wide">
           <div className="dashboard-card__header">
             <div>
-              <h2>Recently completed</h2>
-              <p>A quick look at what has already been finished.</p>
+              <h2>Claim status breakdown</h2>
+              <p>Use this to explain the dashboard aggregation endpoint.</p>
             </div>
-            <span className="badge">{recentCompletedTasks.length}</span>
           </div>
-          <div className="dashboard-preview-list">
-            {recentCompletedTasks.map((task) => (
-              <Link key={task.id} to={`/tasks/${task.id}`} className="dashboard-preview-item dashboard-preview-item--done">
-                <strong>{task.title}</strong>
-                <div className="task-meta">
-                  <span>{task.category || 'General'}</span>
-                  <span>{task.priority}</span>
-                  <span>{task.dueDate || 'No due date'}</span>
-                </div>
-              </Link>
-            ))}
-            {!recentCompletedTasks.length ? <div className="empty">No completed tasks yet.</div> : null}
+          <div className="task-meta">
+            <span>Submitted: {summary?.claimStatuses?.submitted ?? 0}</span>
+            <span>Under review: {summary?.claimStatuses?.underReview ?? 0}</span>
+            <span>Approved: {summary?.claimStatuses?.approved ?? 0}</span>
+            <span>Denied: {summary?.claimStatuses?.denied ?? 0}</span>
+            <span>Closed: {summary?.claimStatuses?.closed ?? 0}</span>
           </div>
         </article>
       </section>
@@ -655,26 +969,26 @@ export default function App() {
         }
       />
       <Route
-        path="/tasks"
+        path="/policies"
         element={
           <ProtectedRoute>
-            {renderTasksScreen()}
+            {renderPoliciesScreen()}
           </ProtectedRoute>
         }
       />
       <Route
-        path="/tasks/new"
+        path="/claims"
         element={
           <ProtectedRoute>
-            {renderCreateTaskScreen()}
+            {renderClaimsScreen()}
           </ProtectedRoute>
         }
       />
       <Route
-        path="/tasks/:id"
+        path="/claims/:id"
         element={
           <ProtectedRoute>
-            <TaskDetailScreen />
+            <ClaimDetailScreen />
           </ProtectedRoute>
         }
       />
