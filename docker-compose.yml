@@ -6,6 +6,8 @@ services:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
       MONGO_INITDB_DATABASE: policy-claims
+    ports:
+      - "27018:27017"
     volumes:
       - mongo_data:/data/db
     healthcheck:

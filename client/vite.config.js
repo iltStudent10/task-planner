@@ -8,16 +8,16 @@ const authProbe = async (port) => {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 1000);
 
-    const response = await fetch(`http://localhost:${port}/api/auth/login`, {
+    const response = await fetch(`http://localhost:${port}/api/auth/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: 'probe@example.com', password: 'probe-pass' }),
+      body: JSON.stringify({ name: 'Probe User', email: 'probe@example.com', password: 'password123' }),
       signal: controller.signal,
     });
 
     clearTimeout(timeout);
 
-    return response.status !== 404;
+    return [200, 201, 400, 409].includes(response.status);
   } catch {
     return false;
   }

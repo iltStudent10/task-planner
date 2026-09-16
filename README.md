@@ -45,21 +45,14 @@ For Postman, use the token returned from `/api/auth/register` or `/api/auth/logi
 
 The dashboard endpoint is available at `/api/dashboard` and returns task totals, open vs. completed counts, categories, and priority breakdowns.
 
-Policy Claims Tracker endpoints from the PDF are also available:
+Primary task endpoints:
 
-- `GET /api/dashboard`
-- `GET /api/policies`
-- `POST /api/policies`
-- `GET /api/policies/:id`
-- `PUT /api/policies/:id`
-- `DELETE /api/policies/:id`
-- `GET /api/claims`
-- `POST /api/claims`
-- `GET /api/claims/stats`
-- `GET /api/claims/:id`
-- `PUT /api/claims/:id`
-- `DELETE /api/claims/:id`
-- `POST /api/claims/:id/notes`
+- `GET /api/tasks`
+- `POST /api/tasks`
+- `GET /api/tasks/:id`
+- `PUT /api/tasks/:id`
+- `PATCH /api/tasks/:id`
+- `DELETE /api/tasks/:id`
 
 ### Client
 ```bash
@@ -81,7 +74,7 @@ docker compose up --build
 Services:
 - API: http://localhost:3000
 - Client: http://localhost:8080
-- MongoDB: internal only
+- MongoDB: mongodb://root:example@localhost:27018
 
 The Compose stack was validated with the API connected to MongoDB and reporting `"storage":"mongodb"` from the health endpoint.
 
@@ -105,7 +98,7 @@ Apply the API manifests to a Kind cluster:
 kubectl apply -f k8s/
 ```
 
-The API service is exposed internally as a `ClusterIP` service. For local access on Kind, use port-forwarding:
+The API service is exposed as a `NodePort` service on port `30080`. On a local Kind cluster, you can still use port-forwarding if preferred:
 
 ```bash
 kubectl port-forward service/task-manager-api 3000:3000 --context kind-task-manager
@@ -124,8 +117,6 @@ kubectl rollout status deployment/task-manager-api --context kind-task-manager
 
 - API health endpoint: `/health`
 - API dashboard endpoint: `/api/dashboard` (requires a Bearer token after login)
-- API policies endpoint: `/api/policies` (requires a Bearer token after login)
-- API claims endpoint: `/api/claims` (requires a Bearer token after login)
 - API tasks endpoint: `/api/tasks` (requires a Bearer token after login)
 - API summary endpoint: `/api/summary` (requires a Bearer token after login)
 
