@@ -52,8 +52,16 @@ const requireToken = (token) => {
   return token;
 };
 
+const resolveRequestToken = (token, auth) => {
+  const explicitToken = String(token || '').trim();
+  const storedToken = getStoredToken();
+  const resolvedToken = explicitToken || storedToken;
+
+  return auth ? requireToken(resolvedToken) : resolvedToken;
+};
+
 const requestJson = async (url, { token, auth = false, ...options } = {}) => {
-  const headers = createAuthHeaders(auth ? requireToken(token) : token, options.headers, options.body);
+  const headers = createAuthHeaders(resolveRequestToken(token, auth), options.headers, options.body);
 
   const response = await fetch(url, {
     ...options,
