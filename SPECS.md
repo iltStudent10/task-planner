@@ -1,7 +1,7 @@
-# Task Manager App Specs
+# Policy Claims Tracker Specs
 
 ## Purpose
-Build a small task management application that demonstrates the assignment requirements from the PDF as real deliverables.
+Build a policy and claims tracking application that demonstrates the assignment requirements from the PDF as real deliverables.
 
 ## Required Deliverables
 
@@ -41,22 +41,23 @@ Build a small task management application that demonstrates the assignment requi
 
 ## User-Facing App Goals
 - Show the above requirements clearly
-- Provide a visual checklist for deliverables
-- Track completion state in the browser
-- Keep the UI simple, modern, and focused on daily task management
+- Provide protected register/login flows
+- Support dashboard, policy CRUD, claim CRUD, and claim notes
+- Keep the UI simple, modern, and focused on policy and claims workflows
 
 ## Suggested Pages / Sections
 - Overview
-- Requirements
-- Deliverables
-- Progress
+- Policies
+- Claims
+- Policy detail
+- Claim detail
 - Deployment notes
 
 ## Naming Convention
-Use task-manager names throughout the project:
-- task-manager-api
-- task-manager-client
-- task manager deployment terminology
+Use policy-claims names throughout the project:
+- policy-claims-api
+- policy-claims-client
+- policy claims deployment terminology
 
 ## Notes
-This specs file should guide the actual application and repository naming so the project reads as a task-tracking app rather than a PDF transcription.
+This specs file should guide the actual application and repository naming so the project reads as a policy claims tracker rather than a generic assignment shell.

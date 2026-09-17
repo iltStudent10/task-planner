@@ -90,12 +90,12 @@ The Compose stack was validated with the API connected to MongoDB and reporting 
 
 ### API Image
 ```bash
-docker build -t task-manager-api ./app
+docker build -t policy-claims-api ./app
 ```
 
 ### Client Image
 ```bash
-docker build -t task-manager-client ./client
+docker build -t policy-claims-client ./client
 ```
 
 ## Kubernetes
@@ -109,16 +109,16 @@ kubectl apply -f k8s/
 The API service is exposed as a `NodePort` service on port `30080`. On a local Kind cluster, you can still use port-forwarding if preferred:
 
 ```bash
-kubectl port-forward service/task-manager-api 3000:3000 --context kind-task-manager
+kubectl port-forward service/policy-claims-api 3000:3000 --context kind-policy-claims
 ```
 
 Validation performed on Kind:
 
 ```bash
-kind create cluster --name task-manager
-kind load docker-image task-manager-api:latest --name task-manager
+kind create cluster --name policy-claims
+kind load docker-image policy-claims-api:latest --name policy-claims
 kubectl apply -f k8s/
-kubectl rollout status deployment/task-manager-api --context kind-task-manager
+kubectl rollout status deployment/policy-claims-api --context kind-policy-claims
 ```
 
 ## Health Checks

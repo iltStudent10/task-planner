@@ -1,27 +1,27 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: task-manager-api
+  name: policy-claims-api
   labels:
-    app: task-manager-api
+    app: policy-claims-api
     component: api
 spec:
   replicas: 2
   revisionHistoryLimit: 5
   selector:
     matchLabels:
-      app: task-manager-api
+      app: policy-claims-api
   template:
     metadata:
       labels:
-        app: task-manager-api
+        app: policy-claims-api
         component: api
     spec:
       securityContext:
         runAsNonRoot: true
       containers:
         - name: api
-          image: task-manager-api:latest
+          image: policy-claims-api:latest
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
