@@ -10,12 +10,27 @@ const parsePositiveInt = (value, fallback) => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
 
+const normalizeOwnershipValue = (value) => String(value || '').trim().toLowerCase();
+
+const userOwnsPolicy = (policy, user) => {
+  if (user?.role === 'admin') {
+    return true;
+  }
+
+  const normalizedOwner = normalizeOwnershipValue(policy?.owner);
+  if (!normalizedOwner || !user) {
+    return false;
+  }
+
+  return [user.id, user.name, user.email].some((candidate) => normalizeOwnershipValue(candidate) === normalizedOwner);
+};
+
 router.get('/', async (req, res, next) => {
   try {
     const policies = await store.getAll();
     const { search, status, type, owner, page = '1', limit = '20' } = req.query;
 
-    let filtered = policies;
+    let filtered = policies.filter((policy) => userOwnsPolicy(policy, req.user));
 
     if (search) {
       const term = String(search).toLowerCase();
@@ -98,6 +113,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const policy = await store.getById(req.params.id);
     if (!policy) return res.status(404).json({ error: 'Policy not found' });
+    if (!userOwnsPolicy(policy, req.user)) return res.status(403).json({ error: 'Forbidden' });
     return res.json({ policy });
   } catch (error) {
     next(error);
@@ -120,6 +136,10 @@ router.put(
   async (req, res, next) => {
   try {
     const { policyNumber, holderName, type, premium, status, effectiveDate, expirationDate, owner } = req.body || {};
+    const current = await store.getById(req.params.id);
+
+    if (!current) return res.status(404).json({ error: 'Policy not found' });
+    if (!userOwnsPolicy(current, req.user)) return res.status(403).json({ error: 'Forbidden' });
 
     const updated = await store.update(req.params.id, {
       policyNumber,
@@ -129,10 +149,9 @@ router.put(
       status,
       effectiveDate,
       expirationDate,
-      owner,
+      owner: req.user.role === 'admin' ? owner : current.owner,
     });
 
-    if (!updated) return res.status(404).json({ error: 'Policy not found' });
     return res.status(200).json({ policy: updated });
   } catch (error) {
     next(error);
@@ -142,6 +161,10 @@ router.put(
 
 router.delete('/:id', async (req, res, next) => {
   try {
+    const current = await store.getById(req.params.id);
+    if (!current) return res.status(404).json({ error: 'Policy not found' });
+    if (!userOwnsPolicy(current, req.user)) return res.status(403).json({ error: 'Forbidden' });
+
     const removed = await store.remove(req.params.id);
     if (!removed) return res.status(404).json({ error: 'Policy not found' });
     return res.status(204).send();

@@ -83,9 +83,55 @@ app.get('/health', async (req, res) => {
 
 app.use('/api/auth', authRoutes);
 
-const buildDashboard = async () => {
-  const policies = await policyStore.getAll();
-  const claims = await claimStore.getAll();
+const normalizeOwnershipValue = (value) => String(value || '').trim().toLowerCase();
+
+const userOwnsRecord = (owner, user) => {
+  const normalizedOwner = normalizeOwnershipValue(owner);
+
+  if (!normalizedOwner || !user) {
+    return false;
+  }
+
+  return [user.id, user.name, user.email].some((candidate) => normalizeOwnershipValue(candidate) === normalizedOwner);
+};
+
+const filterPoliciesForUser = (policies, user) => {
+  if (user?.role === 'admin') {
+    return policies;
+  }
+
+  return policies.filter((policy) => userOwnsRecord(policy.owner, user));
+};
+
+const filterClaimsForUser = (claims, policies, user) => {
+  if (user?.role === 'admin') {
+    return claims;
+  }
+
+  const visiblePolicyIds = new Set(filterPoliciesForUser(policies, user).map((policy) => policy.id));
+  return claims.filter((claim) => visiblePolicyIds.has(claim.policy));
+};
+
+const buildClaimStats = (claims) => {
+  const totalAmount = claims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0);
+
+  return {
+    totalClaims: claims.length,
+    submittedClaims: claims.filter((claim) => claim.status === 'submitted').length,
+    underReviewClaims: claims.filter((claim) => claim.status === 'under-review').length,
+    approvedClaims: claims.filter((claim) => claim.status === 'approved').length,
+    deniedClaims: claims.filter((claim) => claim.status === 'denied').length,
+    closedClaims: claims.filter((claim) => claim.status === 'closed').length,
+    totalAmount,
+    averageAmount: claims.length ? totalAmount / claims.length : 0,
+  };
+};
+
+const buildDashboard = async (user) => {
+  const allPolicies = await policyStore.getAll();
+  const allClaims = await claimStore.getAll();
+  const policies = filterPoliciesForUser(allPolicies, user);
+  const claims = filterClaimsForUser(allClaims, allPolicies, user);
   const policyStatuses = {
     active: policies.filter((policy) => policy.status === 'active').length,
     expired: policies.filter((policy) => policy.status === 'expired').length,
@@ -105,13 +151,13 @@ const buildDashboard = async () => {
     policyStatuses,
     totalClaims: claims.length,
     claimStatuses,
-    claimStats: await claimStore.getStats(),
+    claimStats: buildClaimStats(claims),
   };
 };
 
 const sendDashboard = async (req, res, next) => {
   try {
-    const dashboard = await buildDashboard();
+    const dashboard = await buildDashboard(req.user);
     res.json(dashboard);
   } catch (error) {
     next(error);

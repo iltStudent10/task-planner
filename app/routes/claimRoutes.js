@@ -1,6 +1,7 @@
 const express = require('express');
 const { body } = require('express-validator');
 const store = require('../data/claimStore');
+const policyStore = require('../data/policyStore');
 const handleValidationErrors = require('../middleware/handleValidationErrors');
 
 const router = express.Router();
@@ -10,9 +11,64 @@ const parsePositiveInt = (value, fallback) => {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
 };
 
+const normalizeOwnershipValue = (value) => String(value || '').trim().toLowerCase();
+
+const userOwnsPolicy = (policy, user) => {
+  if (user?.role === 'admin') {
+    return true;
+  }
+
+  const normalizedOwner = normalizeOwnershipValue(policy?.owner);
+  if (!normalizedOwner || !user) {
+    return false;
+  }
+
+  return [user.id, user.name, user.email].some((candidate) => normalizeOwnershipValue(candidate) === normalizedOwner);
+};
+
+const getVisiblePolicyIds = async (user) => {
+  if (user?.role === 'admin') {
+    return null;
+  }
+
+  const policies = await policyStore.getAll();
+  return new Set(policies.filter((policy) => userOwnsPolicy(policy, user)).map((policy) => policy.id));
+};
+
+const canAccessClaim = async (claim, user) => {
+  if (!claim) {
+    return false;
+  }
+
+  if (user?.role === 'admin') {
+    return true;
+  }
+
+  const policy = await policyStore.getById(claim.policy);
+  return userOwnsPolicy(policy, user);
+};
+
+const buildClaimStats = (claims) => {
+  const totalAmount = claims.reduce((sum, claim) => sum + (Number(claim.amount) || 0), 0);
+
+  return {
+    totalClaims: claims.length,
+    submittedClaims: claims.filter((claim) => claim.status === 'submitted').length,
+    underReviewClaims: claims.filter((claim) => claim.status === 'under-review').length,
+    approvedClaims: claims.filter((claim) => claim.status === 'approved').length,
+    deniedClaims: claims.filter((claim) => claim.status === 'denied').length,
+    closedClaims: claims.filter((claim) => claim.status === 'closed').length,
+    totalAmount,
+    averageAmount: claims.length ? totalAmount / claims.length : 0,
+  };
+};
+
 router.get('/stats', async (req, res, next) => {
   try {
-    const stats = await store.getStats();
+    const claims = await store.getAll();
+    const visiblePolicyIds = await getVisiblePolicyIds(req.user);
+    const scopedClaims = visiblePolicyIds ? claims.filter((claim) => visiblePolicyIds.has(claim.policy)) : claims;
+    const stats = buildClaimStats(scopedClaims);
     return res.json({ stats });
   } catch (error) {
     next(error);
@@ -23,8 +79,9 @@ router.get('/', async (req, res, next) => {
   try {
     const claims = await store.getAll();
     const { search, status, policy, assignedTo, page = '1', limit = '20' } = req.query;
+    const visiblePolicyIds = await getVisiblePolicyIds(req.user);
 
-    let filtered = claims;
+    let filtered = visiblePolicyIds ? claims.filter((claim) => visiblePolicyIds.has(claim.policy)) : claims;
 
     if (search) {
       const term = String(search).toLowerCase();
@@ -78,6 +135,15 @@ router.post(
   async (req, res, next) => {
   try {
     const { claimNumber, policy, incidentDate, amount, description, status, assignedTo, notes } = req.body || {};
+    const linkedPolicy = await policyStore.getById(policy);
+
+    if (!linkedPolicy) {
+      return res.status(404).json({ error: 'Policy not found' });
+    }
+
+    if (!userOwnsPolicy(linkedPolicy, req.user)) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
 
     const existing = await store.getByNumber(claimNumber);
     if (existing) {
@@ -106,6 +172,7 @@ router.get('/:id', async (req, res, next) => {
   try {
     const claim = await store.getById(req.params.id);
     if (!claim) return res.status(404).json({ error: 'Claim not found' });
+    if (!(await canAccessClaim(claim, req.user))) return res.status(403).json({ error: 'Forbidden' });
     return res.json({ claim });
   } catch (error) {
     next(error);
@@ -127,6 +194,21 @@ router.put(
   async (req, res, next) => {
   try {
     const { claimNumber, policy, incidentDate, amount, description, status, assignedTo, notes } = req.body || {};
+    const current = await store.getById(req.params.id);
+
+    if (!current) return res.status(404).json({ error: 'Claim not found' });
+    if (!(await canAccessClaim(current, req.user))) return res.status(403).json({ error: 'Forbidden' });
+
+    if (policy) {
+      const nextPolicy = await policyStore.getById(policy);
+      if (!nextPolicy) {
+        return res.status(404).json({ error: 'Policy not found' });
+      }
+
+      if (!userOwnsPolicy(nextPolicy, req.user)) {
+        return res.status(403).json({ error: 'Forbidden' });
+      }
+    }
 
     const updated = await store.update(req.params.id, {
       claimNumber,
@@ -152,6 +234,10 @@ router.post(
   [body('text').trim().notEmpty().withMessage('Note text is required'), handleValidationErrors],
   async (req, res, next) => {
   try {
+    const current = await store.getById(req.params.id);
+    if (!current) return res.status(404).json({ error: 'Claim not found' });
+    if (!(await canAccessClaim(current, req.user))) return res.status(403).json({ error: 'Forbidden' });
+
     const { text } = req.body || {};
     const author = req.user?.name && req.user?.email
       ? `${req.user.name} (${req.user.email})`
@@ -168,6 +254,10 @@ router.post(
 
 router.delete('/:id', async (req, res, next) => {
   try {
+    const current = await store.getById(req.params.id);
+    if (!current) return res.status(404).json({ error: 'Claim not found' });
+    if (!(await canAccessClaim(current, req.user))) return res.status(403).json({ error: 'Forbidden' });
+
     const removed = await store.remove(req.params.id);
     if (!removed) return res.status(404).json({ error: 'Claim not found' });
     return res.status(204).send();
