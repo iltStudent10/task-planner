@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: mongo-data
   labels:
-    app: task-manager
+    app: policy-claims-db
     component: database
 spec:
   accessModes:

@@ -3,11 +3,11 @@ kind: Service
 metadata:
   name: mongo
   labels:
-    app: task-manager
+    app: policy-claims-db
     component: database
 spec:
   selector:
-    app: task-manager
+    app: policy-claims-db
     component: database
   ports:
     - name: mongo
