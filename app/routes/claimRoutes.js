@@ -153,8 +153,11 @@ router.post(
   async (req, res, next) => {
   try {
     const { text } = req.body || {};
+    const author = req.user?.name && req.user?.email
+      ? `${req.user.name} (${req.user.email})`
+      : req.user?.email || req.user?.name || req.user?.id;
 
-    const updated = await store.addNote(req.params.id, { author: req.user.id, text });
+    const updated = await store.addNote(req.params.id, { author, text });
     if (!updated) return res.status(404).json({ error: 'Claim not found' });
     return res.status(201).json({ claim: updated });
   } catch (error) {

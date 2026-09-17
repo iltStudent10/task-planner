@@ -2,21 +2,75 @@ const fs = require('fs/promises');
 const { MongoClient } = require('mongodb');
 const path = require('path');
 const policyStore = require('./policyStore');
+const userStore = require('./userStore');
 
 const dataFilePath = path.join(__dirname, 'claims.json');
 
 let client;
 let collection;
 
+const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const hasMongo = () => Boolean(process.env.MONGO_URI);
 
-const toPublicClaim = (claim) => {
+const formatUserIdentity = (user, fallback) => {
+  if (!user) {
+    return fallback;
+  }
+
+  const name = normalizeString(user.name);
+  const email = normalizeString(user.email);
+
+  if (name && email) {
+    return `${name} (${email})`;
+  }
+
+  return email || name || fallback;
+};
+
+const resolveNoteAuthor = async (author) => {
+  const normalizedAuthor = normalizeString(author);
+
+  if (!normalizedAuthor) {
+    return normalizedAuthor;
+  }
+
+  if (normalizedAuthor.startsWith('user-')) {
+    const user = await userStore.getById(normalizedAuthor);
+    if (user) {
+      return formatUserIdentity(user, normalizedAuthor);
+    }
+  }
+
+  if (emailPattern.test(normalizedAuthor)) {
+    const user = await userStore.getByEmail(normalizedAuthor);
+    if (user) {
+      return formatUserIdentity(user, normalizedAuthor);
+    }
+  }
+
+  return normalizedAuthor;
+};
+
+const toPublicClaim = async (claim) => {
   if (!claim) {
     return claim;
   }
 
   const { _id, ...publicClaim } = claim;
-  return publicClaim;
+  const notes = Array.isArray(publicClaim.notes)
+    ? await Promise.all(
+      publicClaim.notes.map(async (note) => ({
+        ...note,
+        author: await resolveNoteAuthor(note.author),
+      })),
+    )
+    : [];
+
+  return {
+    ...publicClaim,
+    notes,
+  };
 };
 
 const normalizeString = (value) => String(value || '').trim();
@@ -74,7 +128,7 @@ const seedIfEmpty = async () => {
     }
 
     const claims = await claimsCollection.find({}).sort({ _id: -1 }).toArray();
-    return claims.map(toPublicClaim);
+    return Promise.all(claims.map((claim) => toPublicClaim(claim)));
   }
 
   const claims = await readClaims();
@@ -91,10 +145,11 @@ const getAll = async () => {
   if (hasMongo()) {
     const claimsCollection = await getCollection();
     const claims = await claimsCollection.find({}).sort({ _id: -1 }).toArray();
-    return claims.map(toPublicClaim);
+    return Promise.all(claims.map((claim) => toPublicClaim(claim)));
   }
 
-  return readClaims();
+  const claims = await readClaims();
+  return Promise.all(claims.map((claim) => toPublicClaim(claim)));
 };
 
 const getById = async (id) => {
@@ -104,11 +159,13 @@ const getById = async (id) => {
 
   if (hasMongo()) {
     const claimsCollection = await getCollection();
-    return claimsCollection.findOne({ id });
+    const claim = await claimsCollection.findOne({ id });
+    return toPublicClaim(claim);
   }
 
   const claims = await readClaims();
-  return claims.find((claim) => claim.id === id) || null;
+  const claim = claims.find((claim) => claim.id === id) || null;
+  return toPublicClaim(claim);
 };
 
 const getByNumber = async (claimNumber) => {
@@ -159,7 +216,7 @@ const create = async (input) => {
   const claims = await readClaims();
   claims.unshift(claim);
   await writeClaims(claims);
-  return claim;
+  return toPublicClaim(claim);
 };
 
 const update = async (id, updates) => {
@@ -231,7 +288,7 @@ const update = async (id, updates) => {
 
   claims[index] = updated;
   await writeClaims(claims);
-  return updated;
+  return toPublicClaim(updated);
 };
 
 const addNote = async (id, noteInput) => {
@@ -265,7 +322,7 @@ const addNote = async (id, noteInput) => {
   const updated = { ...current, notes: [...notes, note] };
   claims[index] = updated;
   await writeClaims(claims);
-  return updated;
+  return toPublicClaim(updated);
 };
 
 const remove = async (id) => {
