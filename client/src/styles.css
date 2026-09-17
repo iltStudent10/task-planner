@@ -260,6 +260,18 @@ h1 {
   padding: 22px;
 }
 
+.panel__header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.panel__header h2 {
+  margin-bottom: 0;
+}
+
 .panel--wide {
   grid-column: 1 / -1;
 }
@@ -419,6 +431,14 @@ h2 {
 
 .card {
   padding: 16px;
+}
+
+.card-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 16px;
 }
 
 .card--link {
