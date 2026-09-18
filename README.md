@@ -1,51 +1,131 @@
 # Policy Claims Tracker
 
-This repository contains a policy and claims tracking application with JWT-protected APIs, MongoDB persistence, a React frontend, Docker packaging, and Kubernetes deployment assets.
+A full-stack insurance policy and claims tracker built for the WA3478 Phase 3 capstone. The project includes an Express API, MongoDB persistence, a React client, Dockerized deployment, HTTPS termination, and Kind-based Kubernetes manifests.
 
-- Dockerized Express API
-- Docker Compose multi-service setup with MongoDB
-- Multi-stage React client built with Nginx
-- Kubernetes manifests with probes and resource limits
-- Deployment architecture document
-- AI usage log
-- Written rationale
+## Architecture
 
-## Example Uses
+- API: Express + Node.js
+- Database: MongoDB
+- Frontend: React + Vite
+- Authentication: JWT with bcrypt password hashing
+- Delivery: Docker Compose + Nginx + Kind
 
-- Register insurance staff users
-- Create and review policy records
-- Create claims linked to policies
-- Track claim statuses and notes
-- Demonstrate protected dashboard metrics
+## Project structure
 
-## Project Structure
+- `app/` – API service and backend logic
+- `client/` – React frontend
+- `k8s/` – Kubernetes manifests for local Kind deployment
+- `docker-compose.yml` – local Docker Compose stack
+- `docker-compose.prod.yml` – HTTPS production-style stack
+- `generate-certs.sh` – creates local self-signed certificates
+- `certs/` – generated certs for nginx SSL mounting
 
-- `app/` - Express API source and Dockerfile
-- `client/` - React client, Nginx config, and Dockerfile
-- `k8s/` - Kubernetes manifests
-- `docker-compose.yml` - Local multi-service stack
-- `DEPLOYMENT.md` - Architecture plan
-- `AI-USAGE.md` - AI assistance log
-- `RATIONALE.md` - Written explanation of the design
+## Quick start with Docker Compose
 
-## Local Development
+```bash
+docker compose up --build
+```
 
-### API
+Then visit:
+
+- API: http://localhost:4000
+- Client: http://localhost:3000
+- MongoDB: mongodb://root:example@localhost:27017
+
+Seed the database:
+
+```bash
+docker compose exec -T api node seed.js
+```
+
+## Local development without Docker
+
+API:
+
 ```bash
 cd app
 npm install
-npm start
+PORT=4000 MONGODB_URI=mongodb://localhost:27017/policy-claims JWT_SECRET=change-me-in-production node server.js
 ```
 
-If `MONGO_URI` is not set, the API falls back to the local JSON seed file for simple standalone development. In Docker Compose, the API uses MongoDB.
+Client:
 
-Authentication endpoints are available at `/api/auth/register`, `/api/auth/login`, and `/api/auth/me`. The API uses `JWT_SECRET` when provided, and falls back to a development secret for local runs.
+```bash
+cd client
+npm install
+npm run dev
+```
 
-For Postman, use the token returned from `/api/auth/register` or `/api/auth/login` in the request header: `Authorization: Bearer <token>`. In the live app, the token is stored in the session and automatically attached to protected requests.
+The client dev server proxies `/api` requests to `http://localhost:4000`.
 
-The dashboard endpoint is available at `/api/dashboard` and returns policy and claim summary metrics used by the demo UI.
+## Production HTTPS setup
 
-Primary policy endpoints:
+Generate self-signed certs:
+
+```bash
+./generate-certs.sh
+```
+
+Start the production stack:
+
+```bash
+docker compose -f docker-compose.prod.yml up --build
+```
+
+Then open:
+
+- https://localhost:8443
+- HTTP redirect: http://localhost:8080 → HTTPS
+
+## Kind deployment
+
+Create the cluster:
+
+```bash
+kind create cluster --config k8s/kind-config.yaml --name policy-claims
+```
+
+Build and load images:
+
+```bash
+docker build -t capstone-api:latest ./app
+docker build -t capstone-client:latest ./client
+kind load docker-image capstone-api:latest --name policy-claims
+kind load docker-image capstone-client:latest --name policy-claims
+```
+
+Deploy:
+
+```bash
+kubectl apply -f k8s/namespace.yaml
+kubectl apply -f k8s/secrets.yaml
+kubectl apply -f k8s/mongo.yaml
+kubectl apply -f k8s/api.yaml
+kubectl apply -f k8s/client.yaml
+```
+
+Verify:
+
+```bash
+kubectl get pods -n policy-claims
+kubectl get svc -n policy-claims
+```
+
+Access the app at:
+
+```text
+http://localhost:30080
+```
+
+## API endpoints
+
+Authentication:
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+
+Policies:
 
 - `GET /api/policies`
 - `POST /api/policies`
@@ -53,91 +133,51 @@ Primary policy endpoints:
 - `PUT /api/policies/:id`
 - `DELETE /api/policies/:id`
 
-Primary claim endpoints:
+Claims:
 
 - `GET /api/claims`
-- `POST /api/claims`
+- `GET /api/claims/stats`
 - `GET /api/claims/:id`
+- `POST /api/claims`
 - `PUT /api/claims/:id`
-- `DELETE /api/claims/:id`
 - `POST /api/claims/:id/notes`
+- `DELETE /api/claims/:id`
 
-### Client
-```bash
-cd client
-npm install
-npm run dev
-```
+Dashboard:
 
-The client proxies `/api/` requests to the API in development.
+- `GET /api/dashboard`
+- `GET /api/health`
 
-## Docker Compose
+## Tech stack
 
-Build and run the full stack:
+- Node.js
+- Express
+- MongoDB
+- React
+- Vite
+- Docker
+- Nginx
+- Kubernetes / Kind
+- JWT + bcrypt
 
-```bash
-docker compose up --build
-```
+## Required validation
 
-Services:
-- API: http://localhost:3000
-- Client: http://localhost:8080
-- MongoDB: mongodb://root:example@localhost:27018
+This project includes:
 
-The Compose stack was validated with the API connected to MongoDB and reporting `"storage":"mongodb"` from the health endpoint.
-
-## Docker Images
-
-### API Image
-```bash
-docker build -t policy-claims-api ./app
-```
-
-### Client Image
-```bash
-docker build -t policy-claims-client ./client
-```
-
-## Kubernetes
-
-Apply the API manifests to a Kind cluster:
-
-```bash
-kubectl apply -f k8s/
-```
-
-The API service is exposed as a `NodePort` service on port `30080`. On a local Kind cluster, you can still use port-forwarding if preferred:
-
-```bash
-kubectl port-forward service/policy-claims-api 3000:3000 --context kind-policy-claims
-```
-
-Validation performed on Kind:
-
-```bash
-kind create cluster --name policy-claims
-kind load docker-image policy-claims-api:latest --name policy-claims
-kubectl apply -f k8s/
-kubectl rollout status deployment/policy-claims-api --context kind-policy-claims
-```
-
-## Health Checks
-
-- API health endpoint: `/health`
-- API dashboard endpoint: `/api/dashboard` (requires a Bearer token after login)
-- API policies endpoint: `/api/policies` (requires a Bearer token after login)
-- API claims endpoint: `/api/claims` (requires a Bearer token after login)
-- API summary endpoint: `/api/summary` (requires a Bearer token after login)
-
-## REST Examples
-
-- `GET /api/policies?status=active` filters policies by status
-- `GET /api/policies?type=auto` filters policies by type
-- `GET /api/claims?status=submitted` filters claims by status
-- `GET /api/claims?policy=<policyId>` filters claims by linked policy
+- API tests for auth and claim flows using Vitest
+- Client component tests for login, navbar, and protected route behavior
+- Docker and K8s configs for local deploys
+- HTTPS support with self-signed certificates
 
 ## Notes
 
-- Secrets are not committed to the repository.
-- Dockerfiles use alpine-based images and layer caching.
-- The API runs as a non-root user and includes a HEALTHCHECK instruction.
+- The optional AWS/EKS section is not required for the core assignment.
+- The certificate files under `certs/` should never be committed to version control.
+
+## TypeScript-oriented source layout
+
+The API has been structured to support the Phase 3 capstone conventions while preserving the working runtime implementation. The TypeScript-friendly entrypoints live under `app/src/`, with compatibility re-exports for the existing Express app and route modules so the project remains stable and deployable.
+
+- `app/src/server.ts` and `app/src/seed.ts` are the TypeScript entrypoints
+- `app/src/config`, `app/src/middleware`, `app/src/models`, and `app/src/routes` mirror the lab structure
+- The working runtime still uses the existing `app/server.js` and `app/seed.js` modules for compatibility

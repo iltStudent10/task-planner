@@ -107,7 +107,42 @@ This covers:
 - Horizontal vs. vertical scaling
 - AWS cost considerations
 
-## 8. Stop the application
+## 8. Deploy to EKS
+
+If you want to push the app to Amazon EKS, use the ECR-to-EKS flow:
+
+1. Create ECR repositories for the API and client.
+2. Build the Docker images locally.
+3. Tag and push the images to ECR.
+4. Update the Kubernetes manifests to use the ECR image URIs.
+5. Apply the manifests to the EKS cluster.
+
+Example:
+
+```bash
+aws ecr create-repository --repository-name policy-claims-api
+aws ecr create-repository --repository-name policy-claims-client
+
+aws ecr get-login-password --region us-east-1 \
+	| docker login --username AWS --password-stdin ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com
+
+docker build -t policy-claims-api ./app
+docker build -t policy-claims-client ./client
+
+docker tag policy-claims-api:latest ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/policy-claims-api:latest
+docker tag policy-claims-client:latest ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/policy-claims-client:latest
+
+docker push ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/policy-claims-api:latest
+docker push ACCOUNT_ID.dkr.ecr.us-east-1.amazonaws.com/policy-claims-client:latest
+
+kubectl apply -f k8s/
+kubectl rollout status deployment/policy-claims-api
+kubectl rollout status deployment/mongo
+```
+
+For EKS, use a `LoadBalancer` service or ingress for public access, and let the MongoDB PVC use the cluster default storage class.
+
+## 9. Stop the application
 Stop Docker Compose:
 
 ```bash
