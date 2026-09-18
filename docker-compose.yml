@@ -1,6 +1,7 @@
 services:
   mongo:
     image: mongo:7
+    container_name: pct-mongo
     restart: unless-stopped
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
@@ -9,7 +10,7 @@ services:
     ports:
       - "27018:27017"
     volumes:
-      - mongo_data:/data/db
+      - mongo-data:/data/db
     healthcheck:
       test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
       interval: 10s
@@ -18,37 +19,29 @@ services:
       start_period: 20s
 
   api:
-    image: policy-claims-api:latest
-    build:
-      context: ./app
+    build: ./app
+    container_name: pct-api
     restart: unless-stopped
     environment:
-      PORT: 3000
-      MONGO_URI: mongodb://root:example@mongo:27017/policy-claims?authSource=admin
+      PORT: "4000"
+      MONGODB_URI: mongodb://root:example@mongo:27017/policy-claims?authSource=admin
       MONGO_DB_NAME: policy-claims
       JWT_SECRET: change-me-in-production
+      NODE_ENV: development
     depends_on:
       mongo:
         condition: service_healthy
     ports:
-      - "3000:3000"
-    healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://localhost:3000/health"]
-      interval: 15s
-      timeout: 5s
-      retries: 5
-      start_period: 20s
+      - "4000:4000"
 
   client:
-    image: policy-claims-client:latest
-    build:
-      context: ./client
+    build: ./client
+    container_name: pct-client
     restart: unless-stopped
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     ports:
-      - "8080:8080"
+      - "3000:80"
 
 volumes:
-  mongo_data:
+  mongo-data:
