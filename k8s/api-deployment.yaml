@@ -19,6 +19,9 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: api
           image: policy-claims-api:latest
@@ -38,6 +41,9 @@ spec:
             - name: JWT_SECRET
               value: "change-me-in-production"
           securityContext:
+            runAsNonRoot: true
+            runAsUser: 1000
+            runAsGroup: 1000
             allowPrivilegeEscalation: false
             capabilities:
               drop:
