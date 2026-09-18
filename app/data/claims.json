@@ -1,5 +1,71 @@
 [
   {
+    "id": "claim-1789732248567-311c5b",
+    "claimNumber": "CLM-1234",
+    "policy": "policy-1789732118976-715e22",
+    "incidentDate": "2026-09-18",
+    "amount": 500,
+    "description": "Test",
+    "status": "submitted",
+    "assignedTo": "Me",
+    "notes": [
+      {
+        "author": "Michaela Peterson (test@test.com)",
+        "text": "Test Note",
+        "createdAt": "2026-09-18T11:50:57.247Z"
+      }
+    ],
+    "createdAt": "2026-09-18T11:50:48.567Z"
+  },
+  {
+    "id": "claim-1789676860916-543542",
+    "claimNumber": "CLM-1789676860907",
+    "policy": "policy-1789676860904-b926b2",
+    "incidentDate": "2025-05-12",
+    "amount": 2500,
+    "description": "Front bumper damage after minor accident",
+    "status": "submitted",
+    "assignedTo": "",
+    "notes": [],
+    "createdAt": "2026-09-17T20:27:40.916Z"
+  },
+  {
+    "id": "claim-1789676575692-49992e",
+    "claimNumber": "CLM-1789676575686",
+    "policy": "policy-1789676575682-e0417b",
+    "incidentDate": "2025-05-12",
+    "amount": 2500,
+    "description": "Front bumper damage after minor accident",
+    "status": "submitted",
+    "assignedTo": "",
+    "notes": [],
+    "createdAt": "2026-09-17T20:22:55.692Z"
+  },
+  {
+    "id": "claim-1789676404808-32954d",
+    "claimNumber": "CLM-1789676404801",
+    "policy": "policy-1789676404795-8ac9ca",
+    "incidentDate": "2025-05-12",
+    "amount": 2500,
+    "description": "Front bumper damage after minor accident",
+    "status": "submitted",
+    "assignedTo": "",
+    "notes": [],
+    "createdAt": "2026-09-17T20:20:04.808Z"
+  },
+  {
+    "id": "claim-1789676269129-8a0e60",
+    "claimNumber": "CLM-1789676269122",
+    "policy": "policy-1789676269118-fb887c",
+    "incidentDate": "2025-05-12",
+    "amount": 2500,
+    "description": "Front bumper damage after minor accident",
+    "status": "submitted",
+    "assignedTo": "",
+    "notes": [],
+    "createdAt": "2026-09-17T20:17:49.129Z"
+  },
+  {
     "id": "claim-1789572054361-c46637",
     "claimNumber": "CLM-1001",
     "policy": "policy-1789572054311-542804",

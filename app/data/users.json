@@ -1,5 +1,141 @@
 [
   {
+    "id": "user-1789732181115-fa4f54",
+    "name": "Admin",
+    "email": "testacct@gmail.com",
+    "passwordHash": "$2b$10$VdCMH22RS1YMH5FY904jMuXiY.ycKxTN1OlvZQz/TkusyuFZrZOg6",
+    "role": "admin",
+    "createdAt": "2026-09-18T11:49:41.115Z"
+  },
+  {
+    "id": "user-1789676861070-25b7bc",
+    "name": "Test User",
+    "email": "claim-missing-1789676860927-305653ba8bab8@example.com",
+    "passwordHash": "$2b$10$dIF65Zrg9/KCGcYRHlALtuRsTpCpmlo4imvL.A6HzA7xCW3culise",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:27:41.070Z"
+  },
+  {
+    "id": "user-1789676860888-94ff2c",
+    "name": "Test User",
+    "email": "claim-creator-1789676860773-73a0557ed47e9@example.com",
+    "passwordHash": "$2b$10$F6k5N6WXF7FtLJEMkoRSruJ88wf/PQL67tQ/4ZXrApk4DrPK49Bv6",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:27:40.888Z"
+  },
+  {
+    "id": "user-1789676860649-711f3a",
+    "name": "Login Error User",
+    "email": "login-error-1789676860536-027756c5a4f4b@example.com",
+    "passwordHash": "$2b$10$gMRFVqpdE2t8rRtTxPvhO.CzbAPeV6GveYNlX2eYIR0CYqLadZwYm",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:27:40.649Z"
+  },
+  {
+    "id": "user-1789676860517-0ed19b",
+    "name": "Token User",
+    "email": "register-token-1789676860334-cf44a5ab799f5@example.com",
+    "passwordHash": "$2b$10$E3NllXmsnLXR0BGVphODF.RRgoF.vLDu1ejj3oS68jeyqjxEXR20e",
+    "role": "admin",
+    "createdAt": "2026-09-17T20:27:40.517Z"
+  },
+  {
+    "id": "user-1789676575807-cb572d",
+    "name": "Test User",
+    "email": "claim-missing-1789676575704-d878d4e341aa4@example.com",
+    "passwordHash": "$2b$10$fACj0h4bC1V9q0ogeVvjeevVZJnjW4lazGKlWXrL8A4K3pzkOq9YK",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:22:55.807Z"
+  },
+  {
+    "id": "user-1789676575669-e2f495",
+    "name": "Test User",
+    "email": "claim-creator-1789676575558-e653d50dbb73c@example.com",
+    "passwordHash": "$2b$10$sCaJooybJr1tSC5PocBCLujcFrRUwbjoA3RTJmq2g4CSfunv/GD7K",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:22:55.669Z"
+  },
+  {
+    "id": "user-1789676575396-9467b7",
+    "name": "Login Error User",
+    "email": "login-error-1789676575271-0417577ef8936@example.com",
+    "passwordHash": "$2b$10$m0f7k/rd3IhHFw0NxjimNOc0ULUy4OfvBqT9wIWmXqgE/rZF2y8Iq",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:22:55.396Z"
+  },
+  {
+    "id": "user-1789676575247-42e438",
+    "name": "Token User",
+    "email": "register-token-1789676575046-ee33e08812c8e@example.com",
+    "passwordHash": "$2b$10$PkRMUGmF0XsLnuHTE5ux3eC/fb9WMGj8WarMywm8qrAQ/fvpflati",
+    "role": "admin",
+    "createdAt": "2026-09-17T20:22:55.247Z"
+  },
+  {
+    "id": "user-1789676404938-7b42f7",
+    "name": "Test User",
+    "email": "claim-missing-1789676404820-3f3a150ecd9de@example.com",
+    "passwordHash": "$2b$10$oUoOmrBRwod15iwoyXkwd.z.ZDfOEr/1a6F6NfJ1KqeNPpgEOGXo6",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:20:04.938Z"
+  },
+  {
+    "id": "user-1789676404780-6a9715",
+    "name": "Test User",
+    "email": "claim-creator-1789676404613-401a72d9415f6@example.com",
+    "passwordHash": "$2b$10$hPI9OzQ.gdHOUHN8BDMWkubLW2Z4itJO1hs.SBcrQ6yMxC15vdIX.",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:20:04.780Z"
+  },
+  {
+    "id": "user-1789676404445-87db7f",
+    "name": "Login Error User",
+    "email": "login-error-1789676404292-d6adace2c17e2@example.com",
+    "passwordHash": "$2b$10$sSQdUsC2QcO0sZGqGECybeYSORtgvMLehN.ZyKCRp9P.t3ZV2Atx.",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:20:04.445Z"
+  },
+  {
+    "id": "user-1789676404268-09abd0",
+    "name": "Token User",
+    "email": "register-token-1789676404045-a3cf34b345c38@example.com",
+    "passwordHash": "$2b$10$aaNeJa3hOH1NE/smk73fQOznnZAq0WbND98.S846QRyruB/FaCtoG",
+    "role": "admin",
+    "createdAt": "2026-09-17T20:20:04.268Z"
+  },
+  {
+    "id": "user-1789676269283-55c65c",
+    "name": "Test User",
+    "email": "claim-missing-1789676269142-e02f0323524f5@example.com",
+    "passwordHash": "$2b$10$JR27U0t/yI58CwT7a.0lbegxN/rZ6BbOeNLC5.dxf9WCUdXSe0Qeq",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:17:49.283Z"
+  },
+  {
+    "id": "user-1789676269104-2587d9",
+    "name": "Test User",
+    "email": "claim-creator-1789676268961-3bcf2bc611675@example.com",
+    "passwordHash": "$2b$10$gaERxV9/YLCEopF3u.blr.m/XMvKnTBu66hirhxXqh8PUYW378aQW",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:17:49.104Z"
+  },
+  {
+    "id": "user-1789676268797-16ebb2",
+    "name": "Login Error User",
+    "email": "login-error-1789676268622-3c3e00b3f8bdb@example.com",
+    "passwordHash": "$2b$10$8SXwmt1pbD6vBiacucc/fecJbuED06oRW3hMWHmAAFKgVFj0FjBSa",
+    "role": "adjuster",
+    "createdAt": "2026-09-17T20:17:48.797Z"
+  },
+  {
+    "id": "user-1789676268600-abb3b9",
+    "name": "Token User",
+    "email": "register-token-1789676268380-b457af2510c8f@example.com",
+    "passwordHash": "$2b$10$TK.DaFXuuG4JU8nyMXmvIeADo2wQInKWk8HUINeFy569XNKBsxdjS",
+    "role": "admin",
+    "createdAt": "2026-09-17T20:17:48.600Z"
+  },
+  {
     "id": "user-1789572045952-41491c",
     "name": "Smoke User",
     "email": "smoke@example.com",

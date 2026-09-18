@@ -1,19 +1,22 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
 WORKDIR /usr/src/app
 
-RUN apk add --no-cache curl
-
 COPY package*.json ./
-RUN npm ci --omit=dev && npm cache clean --force
+RUN npm install
 
-COPY --chown=node:node . .
+COPY . .
+RUN npm install --only=production
 
-USER node
+FROM node:20-alpine AS runtime
 
-EXPOSE 3000
+WORKDIR /usr/src/app
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD curl -fsS http://localhost:3000/health || exit 1
+COPY --from=builder /usr/src/app .
 
-CMD ["npm", "start"]
+ENV NODE_ENV=production
+ENV PORT=4000
+
+EXPOSE 4000
+
+CMD ["node", "server.js"]

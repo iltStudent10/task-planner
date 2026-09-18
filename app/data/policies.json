@@ -1,5 +1,65 @@
 [
   {
+    "id": "policy-1789732118976-715e22",
+    "policyNumber": "POL-2000",
+    "holderName": "MP Auto",
+    "type": "auto",
+    "premium": 2000,
+    "status": "active",
+    "effectiveDate": "2026-09-01",
+    "expirationDate": "2026-10-01",
+    "owner": "user-1789569269911-efc821",
+    "createdAt": "2026-09-18T11:48:38.977Z"
+  },
+  {
+    "id": "policy-1789676860904-b926b2",
+    "policyNumber": "AUTO-1789676860894",
+    "holderName": "Claim Test Holder",
+    "type": "auto",
+    "premium": 1800,
+    "status": "active",
+    "effectiveDate": "2025-01-01",
+    "expirationDate": "2026-01-01",
+    "owner": "user-1789676860888-94ff2c",
+    "createdAt": "2026-09-17T20:27:40.904Z"
+  },
+  {
+    "id": "policy-1789676575682-e0417b",
+    "policyNumber": "AUTO-1789676575673",
+    "holderName": "Claim Test Holder",
+    "type": "auto",
+    "premium": 1800,
+    "status": "active",
+    "effectiveDate": "2025-01-01",
+    "expirationDate": "2026-01-01",
+    "owner": "user-1789676575669-e2f495",
+    "createdAt": "2026-09-17T20:22:55.682Z"
+  },
+  {
+    "id": "policy-1789676404795-8ac9ca",
+    "policyNumber": "AUTO-1789676404783",
+    "holderName": "Claim Test Holder",
+    "type": "auto",
+    "premium": 1800,
+    "status": "active",
+    "effectiveDate": "2025-01-01",
+    "expirationDate": "2026-01-01",
+    "owner": "user-1789676404780-6a9715",
+    "createdAt": "2026-09-17T20:20:04.795Z"
+  },
+  {
+    "id": "policy-1789676269118-fb887c",
+    "policyNumber": "AUTO-1789676269108",
+    "holderName": "Claim Test Holder",
+    "type": "auto",
+    "premium": 1800,
+    "status": "active",
+    "effectiveDate": "2025-01-01",
+    "expirationDate": "2026-01-01",
+    "owner": "user-1789676269104-2587d9",
+    "createdAt": "2026-09-17T20:17:49.118Z"
+  },
+  {
     "id": "policy-1789572054311-542804",
     "policyNumber": "POL-1001",
     "holderName": "Smoke Holder",
