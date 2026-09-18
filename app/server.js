@@ -20,16 +20,17 @@ const claimStore = require('./data/claimStore');
 const userStore = require('./data/userStore');
 
 const app = express();
-const configuredPort = process.env.PORT ? Number(process.env.PORT) : 3000;
+const configuredPort = process.env.PORT ? Number(process.env.PORT) : 4000;
 const isProduction = process.env.NODE_ENV === 'production';
-const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:8080')
+const allowedOrigins = (process.env.CORS_ORIGIN || 'http://localhost:5173,http://localhost:3000,http://localhost:8080,http://localhost:30080')
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-const connectMongo = async () => {
-  const mongoUri = process.env.MONGO_URI;
+const mongoUri = process.env.MONGODB_URI || process.env.MONGO_URI;
+const mongoDbName = process.env.MONGO_DB_NAME || 'policy-claims';
 
+const connectMongo = async () => {
   if (!mongoUri) {
     console.log('MongoDB not configured; using JSON file storage');
     return;
@@ -37,7 +38,7 @@ const connectMongo = async () => {
 
   try {
     await mongoose.connect(mongoUri, {
-      dbName: process.env.MONGO_DB_NAME || 'policy-claims',
+      dbName: mongoDbName,
     });
     console.log('Connected to MongoDB with Mongoose');
   } catch (error) {
@@ -79,6 +80,10 @@ app.get('/health', async (req, res) => {
     dataFile: path.basename(policyStore.dataFilePath),
     timestamp: new Date().toISOString(),
   });
+});
+
+app.get('/api/health', async (req, res) => {
+  res.json({ status: 'ok' });
 });
 
 app.use('/api/auth', authRoutes);
@@ -192,13 +197,19 @@ const start = async (port = configuredPort) => {
     console.error(error);
     process.exit(1);
   });
+
+  return server;
 };
 
-connectMongo()
-  .then(() => {
-    start();
-  })
-  .catch((error) => {
-    console.error('Failed to start the application:', error);
-    process.exit(1);
-  });
+if (require.main === module) {
+  connectMongo()
+    .then(() => {
+      start();
+    })
+    .catch((error) => {
+      console.error('Failed to start the application:', error);
+      process.exit(1);
+    });
+}
+
+module.exports = { app, start, connectMongo };
